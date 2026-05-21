@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SudoPHASE - Sudoku Solver</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+        }
+        .container {
+            background: #f5f5f5;
+            padding: 30px;
+            border-radius: 10px;
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+        }
+        .input-group {
+            margin: 20px 0;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        textarea, input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-family: monospace;
+        }
+        textarea {
+            height: 100px;
+        }
+        button {
+            background: #4CAF50;
+            color: white;
+            padding: 12px 30px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background: #45a049;
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .result {
+            margin-top: 30px;
+            padding: 20px;
+            background: white;
+            border-radius: 5px;
+            display: none;
+        }
+        .result.show {
+            display: block;
+        }
+        .result h2 {
+            margin-top: 0;
+        }
+        .status {
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+        }
+        .status.failed {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        pre {
+            background: #f4f4f4;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            white-space: pre-wrap;
+        }
+        .loading {
+            display: inline-block;
+            margin-left: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧩 SudoPHASE - Sudoku Solver</h1>
+        
+        <div class="input-group">
+            <label for="puzzle">Puzzle String:</label>
+            <textarea 
+                id="puzzle" 
+                placeholder="Enter puzzle string (use . for empty cells). Example: 53..7....6..195....98....6.8...6...34..8.3..17...2...6.6....28....419..5....8..79"
+            ></textarea>
+        </div>
+
+        <div class="input-group">
+            <label for="algorithm">Algorithm:</label>
+            <select id="algorithm" style="width: 100%; padding: 10px;">
+                <option value="2">Parallel ACS (Recommended)</option>
+                <option value="0">Standard ACS</option>
+                <option value="1">Backtracking</option>
+            </select>
+        </div>
+
+        <div class="input-group">
+            <label for="timeout">Timeout (seconds):</label>
+            <input type="number" id="timeout" value="120" min="10" max="300">
+        </div>
+
+        <button id="solveBtn" onclick="solvePuzzle()">Solve Puzzle</button>
+        <span id="loading" class="loading" style="display: none;">Solving...</span>
+
+        <div id="result" class="result">
+            <h2>Solution</h2>
+            <div id="status"></div>
+            <div id="stats"></div>
+            <pre id="solution"></pre>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:3001/api';
+
+        async function solvePuzzle() {
+            const puzzle = document.getElementById('puzzle').value.trim();
+            const algorithm = parseInt(document.getElementById('algorithm').value);
+            const timeout = parseInt(document.getElementById('timeout').value);
+
+            if (!puzzle) {
+                alert('Please enter a puzzle string');
+                return;
+            }
+
+            const solveBtn = document.getElementById('solveBtn');
+            const loading = document.getElementById('loading');
+            const result = document.getElementById('result');
+            const status = document.getElementById('status');
+            const stats = document.getElementById('stats');
+            const solution = document.getElementById('solution');
+
+            // Show loading
+            solveBtn.disabled = true;
+            loading.style.display = 'inline-block';
+            result.classList.remove('show');
+
+            try {
+                const response = await fetch(`${API_URL}/solve`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        puzzle: puzzle,
+                        algorithm: algorithm,
+                        timeout: timeout,
+                        params: {
+                            subcolonies: 4,
+                            ants: 30
+                        }
+                    })
+                });
+
+                const data = await response.json();
+
+                // Display results
+                if (data.success) {
+                    status.innerHTML = '<div class="status success">✓ Puzzle Solved Successfully!</div>';
+                    stats.innerHTML = `
+                        <p><strong>Time:</strong> ${data.time.toFixed(3)} seconds</p>
+                        <p><strong>Iterations:</strong> ${data.iterations}</p>
+                    `;
+                    solution.textContent = data.solution;
+                } else {
+                    status.innerHTML = '<div class="status failed">✗ Failed to solve puzzle</div>';
+                    stats.innerHTML = `
+                        <p><strong>Time:</strong> ${data.time ? data.time.toFixed(3) : 'N/A'} seconds</p>
+                        <p><strong>Iterations:</strong> ${data.iterations || 'N/A'}</p>
+                    `;
+                    solution.textContent = data.rawOutput || 'No solution found';
+                }
+
+                result.classList.add('show');
+            } catch (error) {
+                alert('Error: ' + error.message);
+                console.error('Error:', error);
+            } finally {
+                solveBtn.disabled = false;
+                loading.style.display = 'none';
+            }
+        }
+
+        // Allow Enter key to solve
+        document.getElementById('puzzle').addEventListener('keydown', (e) => {
+            if (e.ctrlKey && e.key === 'Enter') {
+                solvePuzzle();
+            }
+        });
+    </script>
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>How to Play - SudoSLVRR</title>
+    
+    <style>
+        /* --- 1. IMPORTING YOUR CUSTOM FONT --- */
+        @font-face {
+            font-family: 'VAG Rounded Next Shine';
+            src: url("{{ url_for('static', filename='fonts/iCielVAGRoundedNextShine-Regular.otf') }}") format('opentype');
+            font-weight: normal;
+            font-style: normal;
+        }
+
+        /* --- 2. BASE & BACKGROUND SETUP --- */
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background-color: #000000; /* Pure black background */
+            margin: 0;
+            padding: 40px 20px;
+            display: flex;
+            justify-content: center;
+            line-height: 1.6;
+        }
+
+        /* --- 3. MAIN CONTENT PANEL (Cream Theme) --- */
+        .content-panel {
+            background-color: #fcebd5;
+            border-radius: 20px;
+            padding: 50px;
+            max-width: 800px;
+            width: 100%;
+            border: 4px solid #5a1d08;
+            box-shadow: inset 0px 0px 10px rgba(0,0,0,0.1), 0px 10px 30px rgba(0, 0, 0, 0.6);
+            text-align: left;
+        }
+
+        /* --- 4. TYPOGRAPHY --- */
+        h1 {
+            font-family: 'VAG Rounded Next Shine', sans-serif;
+            font-size: 48px;
+            text-align: center;
+            margin-top: 0;
+            color: #902C21;
+            text-transform: uppercase;
+            text-shadow: 2px 2px 0px rgba(255,255,255,0.6);
+        }
+
+        h2 {
+            font-family: 'VAG Rounded Next Shine', sans-serif;
+            font-size: 32px;
+            margin-top: 40px;
+            color: #902C21;
+            border-bottom: 3px solid rgba(90, 29, 8, 0.2);
+            padding-bottom: 10px;
+        }
+
+        h3 {
+            font-family: 'VAG Rounded Next Shine', sans-serif;
+            font-size: 24px;
+            color: #902C21;
+            margin-bottom: 10px;
+            margin-top: 25px;
+        }
+
+        h4 {
+            font-family: 'VAG Rounded Next Shine', sans-serif;
+            font-size: 20px;
+            color: #5a1d08;
+            text-align: center;
+            margin-bottom: 5px;
+            margin-top: 15px;
+        }
+
+        p, li {
+            font-size: 18px;
+            color: #5a1d08;
+            font-weight: 500;
+        }
+
+        p {
+            text-align: justify;
+        }
+
+        ul {
+            padding-left: 20px;
+        }
+
+        li {
+            margin-bottom: 10px;
+        }
+
+        /* --- 5. TOGGLE SWITCH STYLING --- */
+        .toggle-wrapper {
+            display: flex;
+            background-color: #fdd89c; /* Darker cream */
+            border-radius: 50px;
+            padding: 6px;
+            margin: 30px auto;
+            border: 3px solid #5a1d08;
+            max-width: 500px;
+            box-shadow: inset 0px 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .toggle-btn {
+            flex: 1;
+            padding: 12px 20px;
+            border: none;
+            background: transparent;
+            border-radius: 40px;
+            font-family: 'VAG Rounded Next Shine', sans-serif;
+            font-size: 20px;
+            color: #5a1d08;
+            cursor: pointer;
+            text-transform: uppercase;
+            transition: all 0.3s ease;
+        }
+
+        .toggle-btn.active {
+            background-color: #fcab3a;
+            color: #902C21;
+            box-shadow: 0px 4px 0px #5a1d08;
+            transform: translateY(-2px);
+        }
+
+        /* Hide content sections by default */
+        .tab-content {
+            display: none;
+            animation: fadeIn 0.4s ease;
+        }
+
+        /* Show active content */
+        .tab-content.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* --- 6. CODE BLOCK FOR TXT FORMAT --- */
+        .code-block {
+            background-color: #2c0e04; 
+            color: #fcebd5; 
+            padding: 20px;
+            border-radius: 12px;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 16px;
+            border: 3px solid #5a1d08;
+            overflow-x: auto;
+            margin: 20px 0;
+            box-shadow: inset 0px 4px 10px rgba(0, 0, 0, 0.5);
+        }
+
+        .code-comment { color: #fcab3a; font-style: italic; }
+        .code-highlight { color: #ffffff; font-weight: bold; }
+
+        /* --- 7. IMAGE STYLING --- */
+        .real-image {
+            width: 100%;
+            max-width: 100%;
+            border-radius: 12px;
+            margin: 10px 0 20px 0;
+            box-shadow: 0px 5px 15px rgba(0,0,0,0.4);
+            border: 3px solid #5a1d08;
+            background-color: #ffffff; 
+        }
+
+        .small-image {
+            display: block;
+            max-width: 450px;
+            margin: 20px auto; 
+        }
+
+        .image-grid-container {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            flex-wrap: wrap; 
+            margin-top: 10px;
+        }
+        
+        .image-grid-container > div {
+            flex: 1;
+            min-width: 200px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .feature-description {
+            font-size: 16px;
+            text-align: justify;
+            color: #5a1d08;
+            margin-top: -10px;
+            margin-bottom: 20px;
+        }
+
+        /* --- 8. HIGHLIGHT / REMINDERS BOX --- */
+        .reminders-box, .highlight-box {
+            background-color: rgba(144, 44, 33, 0.1); 
+            border: 3px solid #902C21;
+            border-radius: 12px;
+            padding: 25px;
+            margin: 40px 0 0 0;
+        }
+
+        .highlight-box {
+            background-color: #fdd89c; 
+            border-color: #5a1d08;
+            margin: 20px 0;
+            padding: 20px;
+        }
+
+        .reminders-box h2, .highlight-box h3 {
+            margin-top: 0;
+            border-bottom: none;
+            padding-bottom: 0;
+        }
+
+        .reminders-box h2 { font-size: 28px; }
+        .reminders-box ul { margin-bottom: 0; }
+
+        /* --- 9. BACK BUTTON --- */
+        .back-btn-container {
+            display: flex;
+            justify-content: center;
+            margin-top: 50px;
+        }
+
+        .menu-btn {
+            display: inline-block;
+            text-decoration: none;
+            text-align: center;
+            font-family: 'VAG Rounded Next Shine', sans-serif;
+            font-weight: normal;
+            width: 250px;
+            padding: 15px 0;
+            font-size: 22px;
+            color: #902C21;
+            text-transform: uppercase;
+            background-color: #fcab3a;
+            border-radius: 50px;
+            border: 4px solid #5a1d08;
+            box-shadow: 
+                inset 0px 5px 0px rgba(255, 220, 140, 0.7),
+                inset 0px -6px 0px rgba(212, 107, 21, 0.8),
+                0px 6px 10px rgba(0, 0, 0, 0.5);
+            transition: transform 0.1s ease, box-shadow 0.1s ease, background-color 0.2s ease;
+        }
+
+        .menu-btn:hover {
+            background-color: #fdb752;
+            transform: translateY(-2px);
+            box-shadow: 
+                inset 0px 5px 0px rgba(255, 220, 140, 0.8),
+                inset 0px -6px 0px rgba(212, 107, 21, 0.8),
+                0px 10px 15px rgba(0, 0, 0, 0.6);
+        }
+
+        .menu-btn:active {
+            transform: translateY(4px);
+            box-shadow: 
+                inset 0px 2px 0px rgba(255, 220, 140, 0.5),
+                inset 0px -2px 0px rgba(212, 107, 21, 0.8),
+                0px 2px 5px rgba(0, 0, 0, 0.4);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="content-panel">
+        <h1>Help & Instructions</h1>
+
+        <div class="toggle-wrapper">
+            <button class="toggle-btn active" onclick="switchTab('rules')">Sudoku Rules</button>
+            <button class="toggle-btn" onclick="switchTab('manual')">User Manual</button>
+        </div>
+
+        <div id="rules" class="tab-content active">
+            <h2>The Goal of Sudoku</h2>
+            <p>The objective of Sudoku is simple to learn but difficult to master: fill the empty cells of the grid so that every row, every column, and every defined sub-grid contains all the required numbers exactly once. <strong>No duplicates are allowed!</strong></p>
+
+            <div class="image-grid-container">
+                <div>
+                    <h4>Row</h4>
+                    <img src="{{ url_for('static', filename='Row.png') }}" alt="Sudoku Row Rule" class="real-image">
+                    <p class="feature-description">Every horizontal row must contain all required numbers without any duplicates.</p>
+                </div>
+                <div>
+                    <h4>Column</h4>
+                    <img src="{{ url_for('static', filename='Column.png') }}" alt="Sudoku Column Rule" class="real-image">
+                    <p class="feature-description">Every vertical column must contain all required numbers without any duplicates.</p>
+                </div>
+                <div>
+                    <h4>Subgrid</h4>
+                    <img src="{{ url_for('static', filename='Subgrid.png') }}" alt="Sudoku Subgrid Rule" class="real-image">
+                    <p class="feature-description">Each distinct sub-grid block must also contain all required numbers exactly once.</p>
+                </div>
+            </div>
+
+            <div class="highlight-box">
+                <h3>Standard 9x9 Grid</h3>
+                <ul>
+                    <li>Use numbers <strong>1 through 9</strong>.</li>
+                    <li>The board is divided into nine <strong>3x3 sub-grids</strong>.</li>
+                </ul>
+            </div>
+
+            <div class="highlight-box">
+                <h3>Extended Grids (16x16 & 25x25)</h3>
+                <p>SudoSLVRR is built to handle massive, high-order puzzles. The core rules remain the exact same, just on a larger scale:</p>
+                <ul>
+                    <li><strong>16x16 Grid:</strong> Use numbers 1 through 16. The board is divided into sixteen <strong>4x4 sub-grids</strong>.</li>
+                    <li><strong>25x25 Grid:</strong> Use numbers 1 through 25. The board is divided into twenty-five <strong>5x5 sub-grids</strong>.</li>
+                </ul>
+            </div>
+
+            <h2>Basic Strategies</h2>
+            <ul>
+                <li><strong>Scanning:</strong> Pick a specific number (like a '1') and scan all rows and columns to see where it *cannot* be placed inside a specific sub-grid. Often, there is only one valid cell left!</li>
+                <li><strong>Counting:</strong> If a row, column, or sub-grid already contains almost all its numbers, simply count up to see which number is missing.</li>
+                <li><strong>Elimination:</strong> Look at a single empty cell. Check its row, its column, and its sub-grid to see which numbers are already "taken." If all but one number is present, you know exactly what goes in that cell.</li>
+            </ul>
+
+            <p>If you get stuck, don't worry! That's exactly why SudoSLVRR's ant colony engine exists. Just hit the <strong>Solve</strong> button to let the algorithm do the heavy lifting.</p>
+            
+            <div class="back-btn-container">
+                <a href="{{ url_for('menu') }}" class="menu-btn">Back to Main Menu</a>
+            </div>
+        </div>
+
+        <div id="manual" class="tab-content">
+            <h2>1. Choose Your Mode</h2>
+            
+            <h3>🎮 Game Mode</h3>
+            <p>This is the classic puzzle experience. The interface is clean, focusing entirely on the board. You can manually enter numbers to solve the puzzle yourself. If you get stuck, simply click <strong>Solve</strong>. The game will ignore your manual inputs, take the original puzzle, and automatically solve it using our fastest default algorithm (Algorithm 4 with its best parameters).</p>
+            
+            <h4>The Puzzle Board</h4>
+            <img src="{{ url_for('static', filename='Game_Mode_Sudoku.png') }}" alt="SudoSLVRR Game Mode Board" class="real-image">
+
+            <div class="image-grid-container">
+                <div>
+                    <h4>Header & Timer</h4>
+                    <img src="{{ url_for('static', filename='Game_Mode_Pause.png') }}" alt="Header and Timer" class="real-image">
+                    <p class="feature-description">Clicking <strong>Main Menu</strong> will lead you safely back to the homepage. The <strong>Pause / Play</strong> button allows you to freeze the timer if you need to step away to do something urgent.</p>
+                </div>
+                <div>
+                    <h4>Puzzle Library</h4>
+                    <img src="{{ url_for('static', filename='Game_Mode_Library.png') }}" alt="Puzzle Library" class="real-image">
+                    <p class="feature-description">You can choose from a built-in list of puzzles of varying difficulties. Whether you want to play a standard <strong>9x9</strong>, a larger <strong>16x16</strong>, or a massive <strong>25x25</strong> grid, just select one and click Load.</p>
+                </div>
+            </div>
+
+            <div class="image-grid-container">
+                <div>
+                    <h4>Solve Button</h4>
+                    <img src="{{ url_for('static', filename='Game_Mode_Solve.png') }}" alt="Solve Button" class="real-image">
+                    <p class="feature-description">Stuck on a hard puzzle? Clicking <strong>Solve</strong> will immediately feed the puzzle into the SudoSLVRR engine, using the absolute best configuration to find the solution for you.</p>
+                </div>
+                <div>
+                    <h4>Download Options</h4>
+                    <img src="{{ url_for('static', filename='Download Popup Options.png') }}" alt="Download Popup Options" class="real-image">
+                    <p class="feature-description">You can access flexible options to save your puzzle. Export it as a <strong>.txt</strong> file to upload and play again later, or as a <strong>PDF</strong> for printing!</p>
+                </div>
+            </div>
+
+            <h3>🧪 Experiment Mode</h3>
+            <p>Built for the curious mind. In this mode, you have access to a powerful <strong>Parameters Panel</strong>. You can still play the puzzle manually, but if you click <strong>Solve</strong>, the system will use the specific algorithm and parameters you configured in the panel to crack the puzzle. This is perfect for testing different solving strategies.</p>
+            <img src="{{ url_for('static', filename='Experiment_Mode_Parameters.png') }}" alt="SudoSLVRR Experiment Mode Parameters Panel" class="real-image">
+
+            <h2>2. Create a Puzzle</h2>
+            <p>Want to create your own difficult sudoku puzzle? Head to the <strong>Create Puzzle</strong> mode. Here, you start with a blank grid where you can design your own layout.</p>
+            <ul>
+                <li><strong>Save it:</strong> Add your creation to the puzzle library to play later in Game Mode or Experiment Mode.</li>
+            </ul>
+            <img src="{{ url_for('static', filename='Screenshot Create Puzzle.png') }}" alt="SudoSLVRR Create Puzzle Interface" class="real-image">
+
+            <h2>3. Uploading a Custom Puzzle</h2>
+            <p>You can upload your own puzzles by providing a standard <code>.txt</code> file. When you upload a file, the game will ask you if you want to open it in Game Mode or Experiment Mode.</p>
+            
+            <h3>The Required Text File Format</h3>
+            <p>For the solver to understand your puzzle, your <code>.txt</code> file <strong>must</strong> strictly follow this structure. Numbers must be separated by spaces, and empty cells are represented by <code>-1</code>.</p>
+            
+            <div class="code-block">
+                <span class="code-comment">Line 1: Grid Order (e.g., 3 for a 9x9 grid)</span><br>
+                <span class="code-highlight">3</span><br>
+                <br>
+                <span class="code-comment">Line 2: Placeholder value</span><br>
+                <span class="code-highlight">1</span><br>
+                <br>
+                <span class="code-comment">Line 3+: The puzzle grid (separated by spaces, use -1 for blanks)</span><br>
+                -1 -1 -1 -1 -1 -1 -1 -1 -1<br>
+                -1 -1 -1 -1 -1 -1 -1 -1 -1<br>
+                7 8 9 1 -1 -1 -1 -1 -1<br>
+                <span class="code-comment">... (continue for all rows)</span>
+            </div>
+            <p><strong>Example:</strong> If your order is 3 (a standard 9x9 Sudoku), you must provide exactly 81 values after the first two lines.</p>
+            <img src="{{ url_for('static', filename='Screenshot Example Text File.png') }}" alt="Example Text File Format for SudoSLVRR" class="real-image">
+
+            <h2>4. Downloading a Puzzle</h2>
+            <p>SudoSLVRR offers flexible options for downloading your puzzles. Whether you want to save your progress as a <strong>.txt</strong> file to continue later, download the puzzle in its initial state to challenge yourself, or generate a printable <strong>PDF</strong>, you can access all these choices through the download popup menu.</p>
+            
+            <img src="{{ url_for('static', filename='Download Popup Options.png') }}" alt="SudoSLVRR Download Popup Options" class="real-image small-image">
+
+            <div class="image-grid-container">
+                <div>
+                    <h4>Text Files (.txt)</h4>
+                    <img src="{{ url_for('static', filename='Text Puzzles.png') }}" alt="Text file output format" class="real-image">
+                    <p class="feature-description">Downloading as a text file gives you the raw puzzle data. It cleanly exports both the initial puzzle layout and the current state of your UI (solved or unsolved). You can save this file and re-upload it to SudoSLVRR to continue playing at any time!</p>
+                </div>
+                <div>
+                    <h4>PDF Details</h4>
+                    <img src="{{ url_for('static', filename='PDF Details.png') }}" alt="Specific details zoom in on printable PDF" class="real-image">
+                    <p class="feature-description">If you choose PDF, your printable document isn't just a grid! It includes essential details recorded directly from your session, such as the exact download time, puzzle size, and the specific <strong>solver parameters</strong> used if the engine was activated.</p>
+                </div>
+            </div>
+
+            <h4>PDF Puzzles</h4>
+            <img src="{{ url_for('static', filename='PDF puzzles.png') }}" alt="Initial unsolved puzzle printable PDF page 1 and solved page 2" class="real-image">
+            <p class="feature-description" style="margin-bottom: 0;">The PDF option compiles your puzzle into a clean 2-page document. The first page contains the initial, unsolved puzzle (perfect for printing and playing on paper), and the second page contains the current state or the final solution generated by SudoSLVRR.</p>
+
+            <div class="reminders-box">
+                <h2>Reminders</h2>
+                <ul>
+                    <li>If you are playing manually, <strong>duplicate values</strong> in the same row, column, or sub-grid will be highlighted in <strong>red</strong>, meaning they violate the rules of Sudoku.</li>
+                    <li>Don't forget to click <strong>Save Puzzle</strong> when designing your own grid.</li>
+                </ul>
+            </div>
+            
+            <div class="back-btn-container">
+                <a href="{{ url_for('menu') }}" class="menu-btn">Back to Main Menu</a>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        function switchTab(tabId) {
+            // Hide all tab contents
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // Remove active class from all buttons
+            document.querySelectorAll('.toggle-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+
+            // Show the selected tab content
+            document.getElementById(tabId).classList.add('active');
+
+            // Add active class to the clicked button
+            event.target.classList.add('active');
+        }
+    </script>
+</body>
+</html>

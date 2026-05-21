@@ -1,0 +1,3299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>SudoSLVRR - {{ "Game Mode" if mode == "game" else "Experiment Mode" }}</title>
+  <style>
+    @font-face {
+      font-family: 'VAG Rounded Next Shine';
+      src: url("{{ url_for('static', filename='fonts/iCielVAGRoundedNextShine-Regular.otf') }}") format('opentype');
+      font-weight: normal;
+      font-style: normal;
+      font-display: swap;
+    }
+
+    :root {
+      /* Dark theme (default) */
+      --bg: #2F1F45;
+      --surface: #24283b;
+      --text: #c0caf5;
+      --accent: #7aa2f7;
+      --success: #9ece6a;
+      --border: #3b4261;
+      --cell-border: #414868;
+      --block-border: #7aa2f7;
+    }
+    :root[data-theme="light"] {
+      /* Light theme */
+      --bg: #F7F9FC;
+      --surface: #ffffff;
+      --text: #1f2335;
+      --accent: #3366ff;
+      --success: #2e7d32;
+      --border: #c5cee0;
+      --cell-border: #d0d7ea;
+      --block-border: #363942;
+    }
+    * { box-sizing: border-box; }
+    html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      margin: 0;
+      min-height: 100vh;
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: row;
+      padding: 1rem;
+      padding: max(1rem, env(safe-area-inset-top)) max(1rem, env(safe-area-inset-right)) max(1rem, env(safe-area-inset-bottom)) max(1rem, env(safe-area-inset-left));
+      gap: 1rem;
+    }
+    button, a, input, select, summary, .library-list li { touch-action: manipulation; }
+    .library-panel {
+      flex-shrink: 0;
+      width: 260px;
+      padding: 0.75rem;
+      background: var(--surface);
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+    .library-panel h2 { font-size: 1rem; margin: 0 0 0.25rem 0; color: var(--accent); }
+    .library-panel label { font-size: 0.85rem; }
+    .library-panel select { width: 100%; padding: 0.35rem; background: var(--bg); border: 1px solid var(--border); color: var(--text); border-radius: 4px; }
+    /* ~5 instance rows visible; scroll for the rest */
+    .library-list {
+      flex: 0 0 auto;
+      --library-row: 1.55rem;
+      max-height: calc(5 * var(--library-row) + 0.5rem);
+      min-height: 2rem;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      background: var(--bg);
+      list-style: none;
+      margin: 0;
+      padding: 0.25rem;
+      font-size: 0.8rem;
+    }
+    .library-list li {
+      min-height: var(--library-row);
+      box-sizing: border-box;
+      display: flex;
+      align-items: center;
+      padding: 0.2rem 0.4rem;
+      cursor: pointer;
+      border-radius: 3px;
+      line-height: 1.2;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .library-list li:hover { background: var(--surface); }
+    .library-list li.selected { background: var(--accent); color: var(--bg); }
+    .params-container { margin-top: 1rem; padding-top: 0.75rem; border-top: 1px solid var(--border); display: flex; flex-direction: column; gap: 0.5rem; }
+    .params-header { font-size: 1rem; margin: 0 0 0.25rem 0; color: var(--accent); }
+    .params-container label { font-size: 0.85rem; }
+    .params-container input[type="number"] { width: 4rem; padding: 0.35rem; margin-left: 0.25rem; background: var(--bg); border: 1px solid var(--border); color: var(--text); border-radius: 4px; }
+    .param-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 0.35rem;
+    }
+    .param-row .param-lhs { flex: 1; min-width: 0; line-height: 1.25; }
+    .param-row .param-symbol { font-weight: 600; color: var(--accent); font-size: 0.88rem; }
+    .param-row .param-desc {
+      display: block;
+      margin-top: 0.12rem;
+      font-size: 0.72rem;
+      opacity: 0.88;
+      font-weight: 400;
+      word-break: break-word;
+    }
+    .param-row .param-desc sub { font-size: 0.75em; }
+    .param-row input[type="number"] {
+      flex-shrink: 0;
+      width: 4.5rem;
+      margin-top: 0.12rem;
+      margin-left: 0;
+      text-align: right;
+    }
+    .params-container .btn-solve { width: 100%; margin-top: 0.5rem; padding: 0.5rem 1rem; }
+    .main-area { flex: 1; display: flex; flex-direction: column; align-items: center; min-width: 0; position: relative; width: 100%; }
+    .back-link {
+      position: absolute;
+      top: max(0.5rem, env(safe-area-inset-top));
+      left: max(0.5rem, env(safe-area-inset-left));
+      color: var(--accent);
+      font-size: 0.9rem;
+      text-decoration: none;
+      padding: 0.5rem 0.35rem;
+      min-height: 44px;
+      min-width: 44px;
+      display: inline-flex;
+      align-items: center;
+      z-index: 5;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .back-link:active { opacity: 0.85; }
+    h1 { font-size: 1.5rem; font-weight: 600; margin-bottom: 0.25rem; color: var(--accent); }
+    .subtitle { font-size: 0.85rem; opacity: 0.8; margin-bottom: 0.75rem; }
+    .grid-wrap {
+      padding: 0.5rem;
+      background: var(--surface);
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      max-width: 100%;
+      overflow: auto; /* allow scrolling on small screens (e.g. 25√ó25) */
+    }
+    .pad-wrap { margin-top: 1rem; display: flex; flex-direction: column; align-items: center; gap: 0.75rem; max-width: 340px; }
+    .action-buttons { display: flex; gap: 1rem; justify-content: center; }
+    .action-btn {
+      display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.35rem;
+      padding: 0.6rem 1.25rem; border-radius: 12px; background: transparent;
+      border: 1px solid rgba(192, 202, 245, 0.5); color: var(--text);
+      font-size: 0.85rem; font-weight: 600; cursor: pointer; min-width: 5rem;
+    }
+    .action-btn:hover { border-color: var(--accent); background: rgba(122, 162, 247, 0.1); }
+    .action-btn .action-btn-icon { width: 1.5rem; height: 1.5rem; display: block; }
+    .digit-rows { display: flex; flex-direction: column; align-items: center; gap: 0.4rem; }
+    .digit-row {
+      display: flex; flex-wrap: nowrap; justify-content: center; align-items: center; gap: 0.4rem;
+    }
+    .digit-btn {
+      width: 2.5rem; height: 2.5rem; padding: 0; aspect-ratio: 1;
+      border-radius: 8px; background: transparent;
+      border: 1px solid rgba(192, 202, 245, 0.5); color: var(--text);
+      font-weight: 600; font-size: 1rem; cursor: pointer; flex-shrink: 0;
+    }
+    .digit-btn:hover { border-color: var(--accent); background: rgba(122, 162, 247, 0.1); }
+    .sudoku-grid input.selected-cell {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 1px var(--accent);
+    }
+    .sudoku-grid {
+      display: grid;
+      gap: 0;
+      border: 4px solid var(--block-border);
+    }
+    .sudoku-grid input {
+      border: 1px solid var(--cell-border);
+      background: var(--bg);
+      color: var(--text);
+      font-size: 1.1rem;
+      text-align: center;
+      padding: 0;
+    }
+    .sudoku-grid input:focus { outline: none; border-color: var(--accent); background: var(--surface); }
+    .sudoku-grid input.fixed { font-weight: bold; color: var(--accent); background: var(--surface); }
+    .sudoku-grid input.filled { color: var(--success); background: var(--surface); }
+    /* In light theme:
+       - cell background: #ffffff
+       - fixed clues: digit color #1e2022
+       - user-filled: digit color #6484c1
+       Peer / selected override below. */
+    :root[data-theme="light"] .sudoku-grid input {
+      background: #ffffff;
+    }
+    :root[data-theme="light"] .sudoku-grid input.fixed {
+      background: #ffffff;
+      color: #1e2022;
+    }
+    :root[data-theme="light"] .sudoku-grid input.filled {
+      background: #ffffff;
+      color: #6484c1;
+    }
+    /* Base peer highlighting (dark theme + fallback) */
+    .sudoku-grid input.peer-highlight {
+      background: rgba(255, 255, 255, 0.12);
+    }
+    .sudoku-grid input.peer-highlight.fixed,
+    .sudoku-grid input.peer-highlight.filled {
+      background: rgba(255, 255, 255, 0.18);
+    }
+    /* Peer highlight and selected cell (light theme) */
+    :root[data-theme="light"] .sudoku-grid input.peer-highlight {
+      background: #e3ecf3;
+    }
+    :root[data-theme="light"] .sudoku-grid input.peer-highlight.fixed,
+    :root[data-theme="light"] .sudoku-grid input.peer-highlight.filled {
+      background: #e3ecf3;
+    }
+    :root[data-theme="light"] .sudoku-grid input.selected-cell,
+    :root[data-theme="light"] .sudoku-grid input.selected-cell:focus {
+      background: #b1defd;
+    }
+    /* Conflicted cells stay red and override any peer/background coloring */
+    .sudoku-grid input.conflict,
+    .sudoku-grid input.peer-highlight.conflict {
+      background: #ff4d4f;
+      color: #ffffff;
+    }
+    /* In light theme, explicitly override high-specificity peer rules for conflicts */
+    :root[data-theme="light"] .sudoku-grid input.conflict,
+    :root[data-theme="light"] .sudoku-grid input.peer-highlight.conflict {
+      background: #ff4d4f;
+      color: #ffffff;
+    }
+    /* Block boundaries: thicker, different color (3√ó3, 4√ó4, or 5√ó5 sub-grids) */
+    .sudoku-grid input.block-right { border-right-width: 3px; border-right-color: var(--block-border); }
+    .sudoku-grid input.block-bottom { border-bottom-width: 3px; border-bottom-color: var(--block-border); }
+    .controls { margin-top: 1rem; display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: center; justify-content: center; }
+    .controls label { font-size: 0.9rem; }
+    .controls input[type="number"] { width: 4rem; padding: 0.35rem; background: var(--surface); border: 1px solid var(--border); color: var(--text); border-radius: 4px; }
+    button { padding: 0.5rem 1.25rem; background: var(--accent); color: var(--bg); border: none; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 0.95rem; }
+    button:hover { filter: brightness(1.1); }
+    button:disabled { opacity: 0.6; cursor: not-allowed; }
+    .result { margin-top: 1rem; padding: 1rem; background: var(--surface); border-radius: 8px; border: 1px solid var(--border); min-width: 280px; max-width: 100%; text-align: center; }
+    .result.error { border-color: #f7768e; }
+    .result .time { color: var(--success); font-weight: 600; }
+    .result .meta { font-size: 0.85rem; opacity: 0.9; margin-top: 0.5rem; }
+    .loading { opacity: 0.7; }
+
+    .cell-tooltip {
+      position: fixed;
+      z-index: 20;
+      padding: 0.55rem 1.1rem;
+      border-radius: 999px;
+      background: #ffffff;
+      color: #111827;
+      font-size: 0.9rem;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+      pointer-events: none;
+      opacity: 0;
+      transform: translate(-50%, -135%);
+      transition: opacity 0.15s ease;
+      white-space: nowrap;
+    }
+    .cell-tooltip.visible {
+      opacity: 1;
+    }
+    .cell-tooltip::after {
+      content: "";
+      position: absolute;
+      bottom: -6px;
+      left: 50%;
+      transform: translateX(-50%);
+      border-width: 6px 6px 0 6px;
+      border-style: solid;
+      border-color: #ffffff transparent transparent transparent;
+    }
+    /* In light theme, keep tooltip in accent color to stand out on white UI */
+    :root[data-theme="light"] .cell-tooltip {
+      background: var(--accent);
+      color: var(--bg);
+    }
+    :root[data-theme="light"] .cell-tooltip::after {
+      border-color: var(--accent) transparent transparent transparent;
+    }
+
+    .theme-toggle {
+      position: fixed;
+      top: max(0.75rem, env(safe-area-inset-top));
+      right: max(0.75rem, env(safe-area-inset-right));
+      padding: 0.4rem 0.95rem;
+      min-height: 40px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: rgba(0,0,0,0.15);
+      color: var(--text);
+      font-size: 0.8rem;
+      cursor: pointer;
+      backdrop-filter: blur(6px);
+      z-index: 10;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .theme-toggle:hover { filter: brightness(1.1); }
+
+    /* Collapsible library + parameters on small screens */
+    .side-panel-details { border: none; }
+    .side-panel-details > summary {
+      list-style: none;
+      cursor: pointer;
+      display: none;
+    }
+    .side-panel-details > summary::-webkit-details-marker { display: none; }
+    .side-panel-inner {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    /* ===== Responsive layout for tablets & phones ===== */
+    @media (max-width: 900px) {
+      body {
+        flex-direction: column;
+        padding: max(0.5rem, env(safe-area-inset-top)) max(0.5rem, env(safe-area-inset-right)) max(0.5rem, env(safe-area-inset-bottom)) max(0.5rem, env(safe-area-inset-left));
+        align-items: stretch;
+        gap: 0.65rem;
+      }
+
+      .library-panel {
+        width: 100%;
+        max-width: 640px;
+        margin: 0 auto;
+        order: 2;
+        padding: 0.5rem 0.65rem;
+      }
+
+      .side-panel-details > summary.side-panel-summary {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.5rem;
+        padding: 0.65rem 0.85rem;
+        margin-bottom: 0.35rem;
+        background: var(--bg);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        font-size: 0.9rem;
+        font-weight: 600;
+        color: var(--accent);
+        min-height: 48px;
+      }
+      .side-panel-details > summary.side-panel-summary::after {
+        content: '‚ñæ';
+        font-size: 0.75rem;
+        opacity: 0.85;
+        transition: transform 0.2s ease;
+      }
+      .side-panel-details[open] > summary.side-panel-summary::after {
+        transform: rotate(-180deg);
+      }
+
+      .main-area {
+        width: 100%;
+        order: 1;
+        padding-top: 2.85rem;
+        padding-left: 0;
+        padding-right: 0;
+      }
+
+      .main-area h1 { margin-top: 0.15rem; }
+
+      .grid-wrap {
+        max-width: min(calc(100vw - 1.25rem), 100%);
+        width: 100%;
+        justify-self: center;
+      }
+
+      .pad-wrap {
+        width: 100%;
+        max-width: min(100%, 420px);
+        padding: 0 0.25rem;
+      }
+
+      .digit-row {
+        flex-wrap: wrap;
+        justify-content: center;
+      }
+
+      .digit-btn {
+        width: 2.65rem;
+        height: 2.65rem;
+        min-width: 2.65rem;
+        min-height: 2.65rem;
+      }
+
+      .library-list li {
+        min-height: 44px;
+      }
+
+      .library-panel #loadBtn,
+      .params-container .btn-solve {
+        min-height: 48px;
+        font-size: 1rem;
+      }
+
+      .params-container label,
+      .library-panel label {
+        font-size: 0.9rem;
+      }
+
+      #algSelect {
+        max-width: 100% !important;
+      }
+
+      .alg-select-row {
+        flex-wrap: wrap;
+      }
+
+      .param-row input[type="number"],
+      .params-container input[type="number"] {
+        min-height: 40px;
+        padding: 0.45rem 0.35rem;
+      }
+
+      .theme-toggle {
+        top: max(0.45rem, env(safe-area-inset-top));
+        right: max(0.45rem, env(safe-area-inset-right));
+      }
+    }
+
+    @media (min-width: 901px) {
+      .side-panel-details > summary.side-panel-summary { display: none; }
+    }
+
+    /* Extra-small phones */
+    @media (max-width: 480px) {
+      body {
+        padding: max(0.35rem, env(safe-area-inset-top)) max(0.35rem, env(safe-area-inset-right)) max(0.35rem, env(safe-area-inset-bottom)) max(0.35rem, env(safe-area-inset-left));
+      }
+
+      h1 {
+        font-size: 1.15rem;
+      }
+
+      .subtitle {
+        font-size: 0.8rem;
+        text-align: center;
+        padding: 0 0.5rem;
+      }
+
+      .library-panel {
+        padding: 0.45rem 0.5rem;
+      }
+
+      .action-btn {
+        padding: 0.55rem 0.85rem;
+        min-width: 0;
+        min-height: 44px;
+      }
+
+      button {
+        font-size: 0.9rem;
+      }
+
+      .controls button {
+        min-height: 44px;
+        padding: 0.55rem 1.1rem;
+      }
+
+      .result {
+        min-width: 0;
+        width: 100%;
+        padding: 0.85rem;
+      }
+
+      .param-row .param-desc { font-size: 0.68rem; }
+    }
+
+    /* Short landscape phones */
+    @media (max-width: 900px) and (max-height: 500px) {
+      .main-area { padding-top: 2.25rem; }
+      .subtitle { margin-bottom: 0.35rem; }
+    }
+    body.game-mode {
+      flex-direction: row;
+      align-items: stretch;
+    }
+    body.game-mode .params-container {
+      display: none;
+    }
+    body.game-mode .pad-wrap {
+      transform: translateX(10px);
+    }
+    body.game-mode .controls {
+      transform: translateX(5px);
+    }
+    body.game-mode #solverProgress {
+      transform: translate(80px, 10px);
+    }
+    body.game-mode .controls > :not(#solveBtn) {
+      display: none !important;
+    }
+    .stop-btn {
+      background: #f7768e;
+      color: #1f2335;
+      display: none;
+    }
+    .stop-btn.running {
+      display: inline-block;
+    }
+    .toast-container {
+      position: fixed;
+      right: 1rem;
+      bottom: 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      z-index: 60;
+    }
+    .toast-item {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--text);
+      border-radius: 8px;
+      padding: 0.6rem 0.8rem;
+      max-width: 320px;
+      font-size: 0.85rem;
+    }
+    .toast-item.error { border-color: #f7768e; }
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.55);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 70;
+      padding: 1rem;
+    }
+    .modal-card {
+      width: min(420px, 100%);
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1rem;
+    }
+    .modal-card h3 {
+      margin: 0 0 0.5rem 0;
+      color: var(--accent);
+      font-size: 1rem;
+    }
+    .modal-card p {
+      margin: 0 0 0.75rem 0;
+      font-size: 0.9rem;
+    }
+    .modal-card input {
+      width: 100%;
+      padding: 0.45rem 0.55rem;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background: var(--bg);
+      color: var(--text);
+      margin-bottom: 0.85rem;
+    }
+    .modal-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 0.5rem;
+    }
+    .download-options-modal {
+      max-width: 440px;
+    }
+    .download-options-modal .download-modal-section {
+      margin: 0 0 1rem 0;
+    }
+    .download-options-modal .download-modal-section:last-of-type {
+      margin-bottom: 0.75rem;
+    }
+    .download-options-modal .download-modal-legend {
+      margin: 0 0 0.45rem 0;
+      font-size: 0.88rem;
+      font-weight: 600;
+      color: var(--text);
+    }
+    .download-options-modal .download-modal-option {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.45rem;
+      margin: 0.35rem 0;
+      font-size: 0.85rem;
+      line-height: 1.35;
+      cursor: pointer;
+    }
+    .download-options-modal .download-modal-option input[type="radio"] {
+      margin-top: 0.2rem;
+      flex-shrink: 0;
+      width: auto;
+    }
+    .ui-locked .library-list li,
+    .ui-locked .back-link,
+    .ui-locked .exp-main-menu-btn {
+      pointer-events: none;
+      opacity: 0.55;
+    }
+
+    /* ========== Experiment mode UI (warm game theme) ========== */
+    body.experiment-mode {
+      background-color: #1a1a1a;
+      font-family: 'VAG Rounded Next Shine', 'Segoe UI', system-ui, sans-serif;
+      color: #902c21;
+      flex-direction: column;
+      align-items: stretch;
+      justify-content: flex-start;
+      padding: 10px 24px;
+      padding: max(10px, env(safe-area-inset-top)) max(24px, env(safe-area-inset-right)) max(10px, env(safe-area-inset-bottom)) max(24px, env(safe-area-inset-left));
+      gap: 0;
+      overflow: hidden;
+      height: 100vh;
+      height: 100dvh;
+    }
+    body.experiment-mode .library-panel,
+    body.experiment-mode .game-mode-only {
+      display: none !important;
+    }
+    .exp-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+      flex-shrink: 0;
+    }
+    .exp-header-left {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .exp-main-menu-btn,
+    .exp-pause-btn {
+      background-color: #fcab3a;
+      color: #902c21;
+      text-decoration: none;
+      padding: 8px 22px;
+      border-radius: 30px;
+      font-size: 18px;
+      border: 3px solid #5a1d08;
+      box-shadow: inset 0px 3px 0px rgba(255, 220, 140, 0.7), 0px 4px 6px rgba(0, 0, 0, 0.4);
+      cursor: pointer;
+      font-family: 'VAG Rounded Next Shine', 'Segoe UI', system-ui, sans-serif;
+      transition: transform 0.1s;
+      -webkit-appearance: none;
+      appearance: none;
+    }
+    .exp-pause-btn {
+      background-color: #7aa2f7;
+      color: #1a1b26;
+    }
+    .exp-main-menu-btn:active,
+    .exp-pause-btn:active {
+      transform: translateY(2px);
+    }
+    /* Timer in header: same type scale as menu / pause buttons */
+    .exp-header-timer {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 8px 18px;
+      border-radius: 30px;
+      font-size: 18px;
+      line-height: 1.2;
+      border: 3px solid #5a1d08;
+      background-color: #fdd89c;
+      color: #5a1d08;
+      box-shadow: inset 0px 3px 0px rgba(255, 255, 255, 0.35), 0px 4px 6px rgba(0, 0, 0, 0.25);
+      font-family: 'Courier New', Courier, monospace;
+      font-weight: bold;
+      letter-spacing: 0.5px;
+      white-space: nowrap;
+      min-width: 14ch;
+      box-sizing: border-box;
+    }
+    .exp-header-logo {
+      height: 45px;
+      width: auto;
+      filter: drop-shadow(0px 4px 6px rgba(0, 0, 0, 0.5));
+    }
+    body.experiment-mode .exp-workspace {
+      display: flex;
+      flex-direction: row;
+      gap: 18px;
+      flex: 1;
+      justify-content: center;
+      align-items: stretch;
+      min-height: 0;
+      width: 100%;
+    }
+    body.experiment-mode .exp-panel {
+      background-color: #fcebd5;
+      border: 4px solid #5a1d08;
+      border-radius: 20px;
+      box-shadow: inset 0px 0px 10px rgba(0, 0, 0, 0.1), 0px 10px 20px rgba(0, 0, 0, 0.5);
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+    }
+    body.experiment-mode .exp-puzzle-panel {
+      flex: 1.5;
+      max-width: 900px;
+      align-items: stretch;
+      justify-content: flex-start;
+      gap: 6px;
+      min-height: 0;
+    }
+    body.experiment-mode .exp-puzzle-main-row {
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      justify-content: flex-start;
+      gap: 5px;
+      width: 100%;
+      flex: 1 1 auto;
+      min-height: 0;
+    }
+    body.experiment-mode .exp-puzzle-actions-column {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      flex: 0 0 auto;
+      width: 158px;
+      min-width: 158px;
+      transform: translateX(20px);
+    }
+    body.experiment-mode #expSideActions {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: 100%;
+    }
+    body.experiment-mode #expSideActions .action-buttons {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      width: 100%;
+    }
+    body.experiment-mode .exp-side-secondary-btns {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      width: 100%;
+    }
+    body.experiment-mode .exp-side-secondary-btns button {
+      width: 100%;
+      max-width: 154px;
+      background-color: #7aa2f7;
+      color: #1a1b26;
+      border: 2px solid #5a1d08;
+      border-radius: 12px;
+      padding: 8px 6px;
+      font-family: 'VAG Rounded Next Shine', 'Segoe UI', system-ui, sans-serif;
+      font-size: 13px;
+      font-weight: 600;
+      white-space: nowrap;
+      cursor: pointer;
+      box-shadow: 0px 4px 0px #5a1d08;
+      -webkit-appearance: none;
+      appearance: none;
+    }
+    body.experiment-mode .exp-side-secondary-btns button:active {
+      transform: translateY(3px);
+      box-shadow: 0px 0px 0px #5a1d08;
+    }
+    body.experiment-mode .exp-side-secondary-btns .stop-btn {
+      background-color: #f7768e;
+      color: #1a1b26;
+    }
+    body.experiment-mode .exp-sudoku-container {
+      flex: 1 1 0;
+      min-width: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 0;
+      margin: 0;
+      margin-top: 10px;
+      transition: filter 0.2s ease;
+    }
+    body.experiment-mode.exp-play-paused .exp-sudoku-container,
+    body.experiment-mode.exp-play-paused .exp-numpad-below,
+    body.experiment-mode.exp-play-paused .exp-solver-progress {
+      filter: blur(10px);
+      pointer-events: none;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    body.experiment-mode .exp-puzzle-panel .grid-wrap {
+      background: transparent;
+      border: none;
+      padding: 0;
+      margin: 0;
+      width: 100%;
+      max-width: none;
+      overflow: visible;
+      display: flex;
+      justify-content: center;
+    }
+    body.experiment-mode .exp-puzzle-panel .sudoku-grid {
+      width: auto !important;
+      max-width: none;
+      box-sizing: border-box;
+    }
+    body.experiment-mode .exp-solver-progress {
+      min-height: 1.15em;
+      font-size: 0.92rem;
+      color: #5a1d08;
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      margin: 0;
+      margin-top: 2px;
+      text-align: center;
+      width: 100%;
+      flex-shrink: 0;
+      transition: filter 0.2s ease;
+      transform: translate(80px, 10px);
+    }
+    body.experiment-mode .exp-numpad-below {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      width: 100%;
+      max-width: min(720px, 100%);
+      margin: 0 auto;
+      margin-top: auto;
+      padding-top: 10px;
+      flex-shrink: 0;
+      transition: filter 0.2s ease;
+      transform: translateX(80px);
+    }
+    body.experiment-mode #expSideActions .action-btn {
+      width: 100%;
+      max-width: 154px;
+      flex-direction: row;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 8px 8px;
+      border-radius: 12px;
+      background-color: #fcab3a;
+      border: 2px solid #5a1d08;
+      color: #5a1d08;
+      box-shadow: 0px 4px 0px #5a1d08;
+      font-family: 'VAG Rounded Next Shine', 'Segoe UI', system-ui, sans-serif;
+      font-size: 14px;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+    body.experiment-mode #expSideActions .action-btn:hover {
+      background-color: #fdb752;
+    }
+    body.experiment-mode #expSideActions .action-btn-icon {
+      width: 1.15rem;
+      height: 1.15rem;
+    }
+    body.experiment-mode .exp-numpad-below .digit-rows {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      width: 100%;
+    }
+    body.experiment-mode .exp-numpad-below .digit-row {
+      display: flex;
+      flex-direction: row;
+      flex-wrap: nowrap;
+      justify-content: center;
+      gap: 5px;
+      width: 100%;
+    }
+    body.experiment-mode .exp-numpad-below .digit-btn {
+      width: 40px;
+      height: 40px;
+      min-width: 40px;
+      min-height: 40px;
+      background-color: #fdd89c;
+      border: 2px solid #5a1d08;
+      border-radius: 8px;
+      color: #5a1d08;
+      box-shadow: 0px 3px 0px #5a1d08;
+      font-family: 'VAG Rounded Next Shine', 'Segoe UI', system-ui, sans-serif;
+      font-size: 17px;
+      font-weight: 600;
+    }
+    body.experiment-mode .exp-numpad-below .digit-btn:hover {
+      background-color: #ffe0a8;
+    }
+    body.experiment-mode .exp-solve-btn-main {
+      background-color: #fcab3a;
+      color: #902c21;
+      font-family: 'VAG Rounded Next Shine', 'Segoe UI', system-ui, sans-serif;
+      font-size: 20px;
+      padding: 10px 28px;
+      border: 4px solid #5a1d08;
+      border-radius: 30px;
+      cursor: pointer;
+      box-shadow: inset 0px 4px 0px rgba(255, 220, 140, 0.7), 0px 4px 6px rgba(0, 0, 0, 0.4);
+      width: 100%;
+      max-width: 420px;
+      -webkit-appearance: none;
+      appearance: none;
+    }
+    body.experiment-mode .exp-solve-btn-main:active {
+      transform: translateY(3px);
+    }
+    body.experiment-mode .exp-solve-btn-main:disabled {
+      opacity: 0.65;
+      cursor: not-allowed;
+    }
+    body.experiment-mode .exp-right-column {
+      flex: 1;
+      max-width: 460px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      min-height: 0;
+    }
+    body.create-view .exp-right-column {
+      align-items: center;
+      justify-content: center;
+    }
+    body.create-view .exp-right-column .exp-library-block,
+    body.create-view .exp-right-column .exp-params-panel {
+      width: 100%;
+      max-width: 420px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    body.experiment-mode .exp-library-block label {
+      font-size: 13px;
+      color: #5a1d08;
+      margin-bottom: 4px;
+      display: block;
+    }
+    body.experiment-mode .exp-library-block select {
+      background-color: #fdd89c;
+      border: 3px solid #5a1d08;
+      border-radius: 12px;
+      padding: 8px 12px;
+      font-family: 'VAG Rounded Next Shine', 'Segoe UI', sans-serif;
+      font-size: 15px;
+      color: #5a1d08;
+      width: 100%;
+      margin-bottom: 8px;
+      box-sizing: border-box;
+    }
+    body.experiment-mode .exp-library-block .library-list {
+      background: #fff8ec;
+      border: 2px solid #5a1d08;
+      border-radius: 10px;
+      --exp-lib-row: 2.65rem;
+      max-height: calc(2 * var(--exp-lib-row) + 0.45rem);
+      min-height: 2.5rem;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      padding: 0.25rem;
+      font-size: 0.92rem;
+    }
+    body.game-mode .exp-library-block .library-list {
+      max-height: calc(5 * var(--exp-lib-row) + 0.45rem);
+      min-height: calc(5 * var(--exp-lib-row));
+    }
+    body.experiment-mode .exp-library-block .library-list li {
+      min-height: var(--exp-lib-row);
+      padding: 0.35rem 0.45rem;
+      box-sizing: border-box;
+    }
+    body.experiment-mode .exp-library-block .library-list li.selected {
+      background: #7aa2f7;
+      color: #1a1b26;
+    }
+    body.experiment-mode .exp-library-block #loadBtn {
+      width: 100%;
+      margin-top: 8px;
+      background-color: #fcab3a;
+      border: 3px solid #5a1d08;
+      border-radius: 14px;
+      padding: 10px;
+      font-family: 'VAG Rounded Next Shine', 'Segoe UI', sans-serif;
+      font-size: 16px;
+      color: #902c21;
+      cursor: pointer;
+      box-shadow: inset 0px 3px 0px rgba(255, 220, 140, 0.7);
+    }
+    body.experiment-mode .exp-params-panel {
+      flex: 1;
+      min-height: 0;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+    body.game-mode .exp-params-panel {
+      flex: 0 0 auto;
+      min-height: auto;
+      padding-top: 10px;
+      padding-bottom: 12px;
+    }
+    body.experiment-mode .exp-params-panel .panel-title {
+      text-align: center;
+      font-size: 20px;
+      margin: 0 0 8px 0;
+      color: #902c21;
+    }
+    body.experiment-mode .exp-params-panel .params-container {
+      flex: 1;
+      overflow-y: auto;
+      padding-right: 6px;
+      margin-top: 0;
+      border-top: none;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    body.experiment-mode .exp-form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px 12px;
+      align-content: start;
+    }
+    body.experiment-mode .exp-form-grid .input-group {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      min-width: 0;
+    }
+    body.experiment-mode .exp-form-grid .input-group > label {
+      font-size: 12px;
+      margin-left: 4px;
+      color: #5a1d08;
+      font-weight: 600;
+    }
+    body.experiment-mode .exp-form-grid .param-input,
+    body.experiment-mode .exp-form-grid input[type="number"],
+    body.experiment-mode .exp-form-grid select {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 4px 8px;
+      font-size: 13px;
+      background-color: #fdd89c !important;
+      border: 2px solid #5a1d08 !important;
+      border-radius: 10px !important;
+      color: #5a1d08 !important;
+    }
+    body.experiment-mode .exp-params-panel .solve-btn-container {
+      display: flex;
+      justify-content: center;
+      margin-top: 4px;
+      flex-shrink: 0;
+    }
+    body.experiment-mode .exp-params-panel .params-header {
+      color: #5a1d08;
+      font-size: 0.95rem;
+    }
+    body.experiment-mode .exp-params-panel label {
+      color: #5a1d08;
+    }
+    body.experiment-mode .exp-params-panel .param-input,
+    body.experiment-mode .exp-params-panel input[type="number"],
+    body.experiment-mode .exp-params-panel select {
+      background-color: #fdd89c !important;
+      border: 2px solid #5a1d08 !important;
+      border-radius: 10px !important;
+      color: #5a1d08 !important;
+    }
+    body.experiment-mode .exp-params-panel .param-row {
+      align-items: center;
+    }
+    body.experiment-mode .sudoku-grid {
+      border-color: #5a1d08;
+      gap: 0;
+    }
+    body.experiment-mode .sudoku-grid input {
+      background: #ffffff !important;
+      border: 1px solid #c9b89a !important;
+      color: #2a2a2a !important;
+      font-family: 'Segoe UI', sans-serif !important;
+      font-weight: bold;
+    }
+    /* Fixed clues: cool blue tint ‚Äî clearly ‚Äúgiven‚Äù */
+    body.experiment-mode .sudoku-grid input.fixed {
+      background: #cfe2f7 !important;
+      color: #0d2d4d !important;
+      border-color: #6b9bd1 !important;
+    }
+    /* User-entered values: warm white + green digit */
+    body.experiment-mode .sudoku-grid input.filled {
+      background: #fff9e6 !important;
+      color: #0d5c2e !important;
+      border-color: #c4a35a !important;
+    }
+    body.experiment-mode .sudoku-grid input.block-right { border-right-width: 3px !important; border-right-color: #5a1d08 !important; }
+    body.experiment-mode .sudoku-grid input.block-bottom { border-bottom-width: 3px !important; border-bottom-color: #5a1d08 !important; }
+    body.experiment-mode .sudoku-grid input.peer-highlight:not(.conflict) {
+      background: #f5e6ff !important;
+    }
+    body.experiment-mode .sudoku-grid input.peer-highlight.fixed:not(.conflict) {
+      background: #b8d4f2 !important;
+    }
+    body.experiment-mode .sudoku-grid input.peer-highlight.filled:not(.conflict) {
+      background: #ffeccd !important;
+    }
+    body.experiment-mode .sudoku-grid input.selected-cell {
+      box-shadow: 0 0 0 2px #fcab3a !important;
+      border-color: #fcab3a !important;
+    }
+    body.experiment-mode .sudoku-grid input.conflict,
+    body.experiment-mode .sudoku-grid input.peer-highlight.conflict {
+      background: #ff4d4f !important;
+      color: #fff !important;
+    }
+    body.experiment-mode #result.results-box {
+      display: none;
+      flex-direction: column;
+      gap: 6px;
+      margin-top: 12px;
+      padding: 10px;
+      background-color: rgba(252, 171, 58, 0.35);
+      border: 2px dashed #5a1d08;
+      border-radius: 10px;
+      font-family: 'Segoe UI', sans-serif;
+      font-size: 14px;
+      color: #5a1d08;
+    }
+    body.experiment-mode #result.results-box .time { color: #902c21; font-family: 'VAG Rounded Next Shine', sans-serif; font-weight: 700; }
+    body.experiment-mode #result.results-box.error {
+      border-color: #f7768e;
+      background: rgba(247, 118, 142, 0.2);
+    }
+    body.experiment-mode #result.results-box.loading { opacity: 0.85; }
+
+    body.experiment-mode #expSideActions .action-btn:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+    body.experiment-mode .modal-card {
+      background: #fcebd5;
+      border: 2px solid #5a1d08;
+      color: #5a1d08;
+    }
+    body.experiment-mode .modal-card h3 { color: #902c21; }
+    body.experiment-mode .modal-card input:not([type="radio"]):not([type="checkbox"]) {
+      background: #fdd89c !important;
+      border-color: #5a1d08 !important;
+      color: #5a1d08 !important;
+    }
+    body.experiment-mode .download-options-modal .download-modal-legend {
+      color: #5a1d08;
+    }
+    body.experiment-mode .toast-item {
+      background: #fcebd5;
+      border: 2px solid #5a1d08;
+      color: #5a1d08;
+    }
+
+    @media (max-width: 1100px) {
+      body.experiment-mode .exp-workspace {
+        flex-direction: column;
+        align-items: center;
+        overflow-y: auto;
+      }
+      body.experiment-mode {
+        overflow-y: auto;
+        height: auto;
+        min-height: 100dvh;
+      }
+      body.experiment-mode .exp-puzzle-panel,
+      body.experiment-mode .exp-right-column {
+        max-width: 640px;
+        width: 100%;
+      }
+    }
+    @media (max-width: 420px) {
+      body.experiment-mode .exp-form-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+    @media (max-width: 640px) {
+      body.experiment-mode .exp-puzzle-main-row {
+        flex-direction: column;
+        align-items: center;
+      }
+      body.experiment-mode .exp-puzzle-actions-column {
+        flex-direction: row;
+        flex-wrap: wrap;
+        width: 100%;
+        max-width: 420px;
+        justify-content: center;
+      }
+      body.experiment-mode #expSideActions {
+        display: flex;
+        flex: 1 1 auto;
+        min-width: 140px;
+      }
+      body.experiment-mode #expSideActions .action-buttons {
+        flex-direction: row;
+      }
+      body.experiment-mode .exp-side-secondary-btns {
+        flex: 1 1 200px;
+        flex-direction: row;
+        flex-wrap: wrap;
+        justify-content: center;
+      }
+      body.experiment-mode .exp-side-secondary-btns button {
+        flex: 1 1 120px;
+      }
+    }
+  </style>
+</head>
+<body class="{{ 'experiment-mode game-mode' if mode == 'game' else 'experiment-mode' }}{% if create_view %} create-view{% endif %}">
+{% if false %}
+  <aside class="library-panel">
+    <details class="side-panel-details" id="sidePanelDetails" open>
+      <summary class="side-panel-summary">Library &amp; solver settings</summary>
+      <div class="side-panel-inner">
+    <h2>Puzzle library</h2>
+    <label>Size:</label>
+    <select id="sizeSelect">
+      <option value="9√ó9">9√ó9</option>
+      <option value="16√ó16">16√ó16</option>
+      <option value="25√ó25">25√ó25</option>
+    </select>
+    <label{% if hide_instances_list %} style="display:none;" aria-hidden="true"{% endif %}>Instances <span style="font-weight:400;opacity:0.75;font-size:0.75rem;">(scroll for more)</span></label>
+    <ul class="library-list" id="libraryList" role="listbox" aria-label="Puzzle instances"{% if hide_instances_list %} style="display:none;" aria-hidden="true"{% endif %}></ul>
+    <button type="button" id="loadBtn"{% if hide_instances_list %} style="display:none;" aria-hidden="true"{% endif %}>Load Selected Puzzle</button>
+    <div class="params-container" style="overflow-y:auto; padding-right:0.25rem;">
+      <h2 class="params-header" style="font-size: 1.1rem; margin-bottom: 0.5rem;">Parameters</h2>
+      <h2 class="params-header">General</h2>
+      <label class="alg-select-row" style="display:flex; justify-content:space-between; align-items:center; gap:0.35rem;">Algorithm:
+        <select id="algSelect" style="flex:1; max-width:11rem; min-width:0; padding:0.35rem; background:var(--bg); border:1px solid var(--border); color:var(--text); border-radius:4px; font-size:0.8rem;">
+          <option value="0">1 - Single Colony</option>
+          <option value="3">2 - Multi Colony ACO</option>
+          <option value="4" selected>3 - Multithread Multi-Colony ACO</option>
+        </select>
+      </label>
+      <label style="display:flex; justify-content:space-between; align-items:center;">Timeout (s): <input type="number" id="timeout" value="5" min="5" max="600" style="width: 4.5rem; text-align:right;"></label>
+
+      <h2 class="params-header" style="margin-top:0.5rem; font-size:0.95rem;">Ant colony</h2>
+      <label style="display:flex; justify-content:space-between; align-items:center;">Ants: <input type="number" id="ants" value="3" min="1" style="width: 4.5rem; text-align:right;"></label>
+      <label class="param-row" title="Greediness (maps to --q0)">
+        <span class="param-lhs">
+          <span class="param-symbol">q<sub>0</sub></span>
+          <span class="param-desc">Greediness</span>
+        </span>
+        <input type="number" id="q0" value="0.9" min="0" max="1" step="0.01">
+      </label>
+      <label class="param-row" title="Pheromone persistence (maps to --rho)">
+        <span class="param-lhs">
+          <span class="param-symbol">œÅ</span>
+          <span class="param-desc">Pheromone Persistence</span>
+        </span>
+        <input type="number" id="rho" value="0.9" min="0" max="1" step="0.01">
+      </label>
+      <label class="param-row" title="Local pheromone update (maps to --xi)">
+        <span class="param-lhs">
+          <span class="param-symbol">Œæ</span>
+          <span class="param-desc">Local Pheromone Update</span>
+        </span>
+        <input type="number" id="xi" value="0.1" min="0" max="1" step="0.01">
+      </label>
+      <label class="param-row" title="Best value evaporation (maps to --evap)">
+        <span class="param-lhs">
+          <span class="param-symbol">œÅ<sub>BVE</sub></span>
+          <span class="param-desc">Best Value Evaporation</span>
+        </span>
+        <input type="number" id="evap" value="0.005" min="0.001" max="0.999" step="0.001">
+      </label>
+
+      <h2 class="params-header" style="margin-top:0.5rem; font-size:0.95rem;">Multi-Colony ACO</h2>
+      <label style="display:flex; justify-content:space-between; align-items:center;">Numacs: <input type="number" id="numacs" value="2" min="1" style="width: 4.5rem; text-align:right;"></label>
+      <label style="display:flex; justify-content:space-between; align-items:center;">Entropythreshold: <input type="number" id="entropythreshold" value="1.47" min="0" step="0.01" style="width: 4.5rem; text-align:right;"></label>
+      <label style="display:flex; justify-content:space-between; align-items:center;">Convthreshold: <input type="number" id="convthreshold" value="0.8" min="0" max="1" step="0.01" style="width: 4.5rem; text-align:right;"></label>
+
+      <div id="mtParams">
+        <h2 class="params-header" style="margin-top:0.5rem; font-size:0.95rem;">Threads &amp; comm (alg 4)</h2>
+        <label style="display:flex; justify-content:space-between; align-items:center;">Threads: <input type="number" id="threads" value="5" min="1" max="32" style="width: 4.5rem; text-align:right;"></label>
+        <label style="display:flex; justify-content:space-between; align-items:center;">Comm-threshold: <input type="number" id="commThreshold" value="200" min="1" style="width: 4.5rem; text-align:right;"></label>
+        <label style="display:flex; justify-content:space-between; align-items:center;">Comm-early: <input type="number" id="commEarly" value="100" min="1" style="width: 4.5rem; text-align:right;"></label>
+        <label style="display:flex; justify-content:space-between; align-items:center;">Comm-late: <input type="number" id="commLate" value="10" min="1" style="width: 4.5rem; text-align:right;"></label>
+      </div>
+
+    </div>
+      </div>
+    </details>
+  </aside>
+  <main class="main-area">
+    <a href="/" class="back-link">‚Üê Main menu</a>
+    <h1>SudoSLVRR</h1>
+    {% if not hide_timer_controls %}
+    <p class="subtitle" id="subtitle">Puzzle ¬∑ 0:00</p>
+    {% endif %}
+    <p class="subtitle" id="solverProgress" style="min-height:1.2em;font-size:0.8rem;opacity:0.85;margin-top:-0.35rem;"></p>
+    <div class="grid-wrap">
+      <div class="sudoku-grid" id="grid"></div>
+    </div>
+    <div class="pad-wrap" id="numberPad"></div>
+    <div class="controls">
+      <button type="button" id="solveBtn">Solve</button>
+      <button type="button" id="downloadPuzzleBtn">{{ 'Save Puzzle' if create_view else 'Download' }}</button>
+      <button type="button" id="stopBtn" class="stop-btn">Stop</button>
+    </div>
+    <div class="result" id="result" style="display: none;"></div>
+  </main>
+{% else %}
+  <header class="exp-header">
+    <div class="exp-header-left">
+      <a href="{{ url_for('menu') }}" class="exp-main-menu-btn">MAIN MENU</a>
+      {% if not hide_timer_controls %}
+      <button type="button" class="exp-pause-btn" id="expPauseBtn" title="Pause or resume the play timer">‚èØ Pause / Play</button>
+      <div class="exp-header-timer" id="subtitle" aria-live="polite">‚è± 00:00:00</div>
+      {% endif %}
+    </div>
+    <img src="{{ url_for('static', filename='SudoSLVRR_Logo.png') }}" alt="SudoSLVRR" class="exp-header-logo" decoding="async">
+  </header>
+  <main class="exp-workspace workspace">
+    <section class="exp-panel exp-puzzle-panel main-area">
+      <div class="exp-puzzle-main-row">
+        <div class="exp-puzzle-actions-column">
+          <div id="expSideActions" aria-label="Undo and erase"></div>
+          <div class="exp-side-secondary-btns">
+            <button type="button" id="downloadPuzzleBtn">{{ 'Save Puzzle' if create_view else 'Download' }}</button>
+            <button type="button" id="uploadPuzzleBtn" title="Load a puzzle from a .txt file">Upload Puzzle</button>
+            <input type="file" id="uploadPuzzleInput" accept=".txt" style="display:none;" aria-hidden="true">
+            <button type="button" id="stopBtn" class="stop-btn">Stop</button>
+          </div>
+        </div>
+        <div class="exp-sudoku-container">
+          <div class="grid-wrap">
+            <div class="sudoku-grid" id="grid"></div>
+          </div>
+        </div>
+      </div>
+      <p class="exp-solver-progress" id="solverProgress"></p>
+      <div id="numberPad" class="exp-numpad-below"></div>
+    </section>
+    <div class="exp-right-column right-column">
+      <section class="exp-panel exp-library-block">
+        <h2 class="panel-title" style="font-size:1rem;margin:0 0 8px 0;text-align:center;color:#902c21;">{{ 'Create a Puzzle' if create_view else 'Library' }}</h2>
+        <label for="sizeSelect">Size</label>
+        <select id="sizeSelect">
+          <option value="9√ó9">9√ó9</option>
+          <option value="16√ó16">16√ó16</option>
+          <option value="25√ó25">25√ó25</option>
+        </select>
+        <label for="libraryList"{% if hide_instances_list %} style="display:none;" aria-hidden="true"{% endif %}>Instances <span style="font-weight:400;opacity:0.75;font-size:0.72rem;">(scroll for more)</span></label>
+        <ul class="library-list" id="libraryList" role="listbox" aria-label="Puzzle instances"{% if hide_instances_list %} style="display:none;" aria-hidden="true"{% endif %}></ul>
+        <button type="button" id="loadBtn"{% if hide_instances_list %} style="display:none;" aria-hidden="true"{% endif %}>Load Selected Puzzle</button>
+      </section>
+      <section class="exp-panel exp-params-panel parameters-panel">
+        {% if mode != 'game' %}
+        <h2 class="panel-title">PARAMETERS</h2>
+        <div class="params-container exp-params-inner" style="overflow-y:auto; padding-right:0.25rem;">
+          <div class="form-grid exp-form-grid">
+            <div class="input-group">
+              <label for="algSelect">Algorithm</label>
+              <select id="algSelect" class="param-input">
+                <option value="0">1 - Single Colony</option>
+                <option value="3">2 - Multi Colony ACO</option>
+                <option value="4" selected>3 - Multithread Multi-Colony ACO</option>
+              </select>
+            </div>
+            <div class="input-group">
+              <label for="timeout">Timeout (sec)</label>
+              <input type="number" id="timeout" class="param-input" value="5" min="5" max="600">
+            </div>
+            <div class="input-group">
+              <label for="ants">Number of Ants</label>
+              <input type="number" id="ants" class="param-input" value="3" min="1">
+            </div>
+            <div class="input-group">
+              <label for="q0">q<sub>0</sub></label>
+              <input type="number" id="q0" class="param-input" value="0.9" min="0" max="1" step="0.01" title="Greediness (maps to --q0)">
+            </div>
+            <div class="input-group">
+              <label for="rho">p</label>
+              <input type="number" id="rho" class="param-input" value="0.9" min="0" max="1" step="0.01" title="Pheromone persistence (œÅ)">
+            </div>
+            <div class="input-group">
+              <label for="xi">Œæ</label>
+              <input type="number" id="xi" class="param-input" value="0.1" min="0" max="1" step="0.01" title="Local pheromone update (Œæ)">
+            </div>
+            <div class="input-group">
+              <label for="evap">p<sub>BVE</sub></label>
+              <input type="number" id="evap" class="param-input" value="0.005" min="0.001" max="0.999" step="0.001" title="Best value evaporation">
+            </div>
+            <div class="input-group exp-mc-only">
+              <label for="numacs">ACS colonies</label>
+              <input type="number" id="numacs" class="param-input" value="2" min="1">
+            </div>
+            <div class="input-group exp-mc-only">
+              <label for="entropythreshold">Entropy threshold</label>
+              <input type="number" id="entropythreshold" class="param-input" value="1.47" min="0" step="0.01">
+            </div>
+            <div class="input-group exp-mc-only">
+              <label for="convthreshold">Convergence threshold</label>
+              <input type="number" id="convthreshold" class="param-input" value="0.8" min="0" max="1" step="0.01">
+            </div>
+            <div class="input-group exp-mt-only">
+              <label for="threads">Number of threads</label>
+              <input type="number" id="threads" class="param-input" value="5" min="1" max="32">
+            </div>
+            <div class="input-group exp-mt-only">
+              <label for="commThreshold">Communication threshold</label>
+              <input type="number" id="commThreshold" class="param-input" value="200" min="1">
+            </div>
+            <div class="input-group exp-mt-only">
+              <label for="commEarly">Early comm. interval</label>
+              <input type="number" id="commEarly" class="param-input" value="100" min="1">
+            </div>
+            <div class="input-group exp-mt-only">
+              <label for="commLate">Late comm. interval</label>
+              <input type="number" id="commLate" class="param-input" value="10" min="1">
+            </div>
+          </div>
+          <div class="solve-btn-container">
+            <button type="button" id="solveBtn" class="exp-solve-btn-main solve-btn-main">Solve</button>
+          </div>
+        </div>
+        {% else %}
+        <div class="solve-btn-container" style="margin-top: 4px;">
+          <button type="button" id="solveBtn" class="exp-solve-btn-main solve-btn-main">{{ 'Play this Puzzle' if create_view else 'Solve' }}</button>
+        </div>
+        <div style="display:none;" aria-hidden="true">
+          <select id="algSelect">
+            <option value="4" selected>3 - Multithread Multi-Colony ACO</option>
+          </select>
+          <input type="number" id="timeout" value="9" min="5" max="600">
+          <input type="number" id="ants" value="3" min="1">
+          <input type="number" id="q0" value="0.9" min="0" max="1" step="0.01">
+          <input type="number" id="rho" value="0.99" min="0" max="1" step="0.01">
+          <input type="number" id="xi" value="0.1" min="0" max="1" step="0.01">
+          <input type="number" id="evap" value="0.0125" min="0.001" max="0.999" step="0.0001">
+          <input type="number" id="numacs" value="6" min="1">
+          <input type="number" id="entropythreshold" value="1.39" min="0" step="0.01">
+          <input type="number" id="convthreshold" value="0.4" min="0" max="1" step="0.01">
+          <input type="number" id="threads" value="5" min="1" max="32">
+          <input type="number" id="commThreshold" value="200" min="1">
+          <input type="number" id="commEarly" value="120" min="1">
+          <input type="number" id="commLate" value="5" min="1">
+        </div>
+        {% endif %}
+        <div class="result results-box" id="result" style="display:none;"></div>
+      </section>
+    </div>
+  </main>
+{% endif %}
+  <div id="toastContainer" class="toast-container" aria-live="polite"></div>
+  <div id="appModalBackdrop" class="modal-backdrop" role="dialog" aria-modal="true">
+    <div class="modal-card">
+      <h3 id="appModalTitle">Notice</h3>
+      <p id="appModalMessage"></p>
+      <input type="text" id="appModalInput" style="display:none;">
+      <div class="modal-actions">
+        <button type="button" id="appModalCancel">Cancel</button>
+        <button type="button" id="appModalConfirm">OK</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="downloadModalBackdrop" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="downloadModalTitle" style="display: none;">
+    <div class="modal-card download-options-modal">
+      <h3 id="downloadModalTitle">Download</h3>
+      <div class="download-modal-section">
+        <div class="download-modal-legend">Which would you like to download?</div>
+        <label class="download-modal-option">
+          <input type="radio" name="downloadContent" value="clues" checked>
+          <span>Puzzle only</span>
+        </label>
+        <label class="download-modal-option">
+          <input type="radio" name="downloadContent" value="current">
+          <span>Puzzle and the current state of the grid (solved or unsolved)</span>
+        </label>
+      </div>
+      <div class="download-modal-section" id="downloadFormatSection">
+        <div class="download-modal-legend">How would you want to download it?</div>
+        <label class="download-modal-option">
+          <input type="radio" name="downloadFormat" value="txt" checked>
+          <span>Text (.txt)</span>
+        </label>
+        <label class="download-modal-option" id="downloadFormatPdfLabel">
+          <input type="radio" name="downloadFormat" value="pdf" id="downloadFormatPdf">
+          <span>PDF (.pdf)</span>
+        </label>
+      </div>
+      <div class="modal-actions">
+        <button type="button" id="downloadModalCancel">Cancel</button>
+        <button type="button" id="downloadModalConfirm">Continue</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="resumeUploadBackdrop" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="resumeUploadTitle" style="display: none;">
+    <div class="modal-card download-options-modal">
+      <h3 id="resumeUploadTitle">Saved progress</h3>
+      <p style="margin: 0 0 0.75rem 0; font-size: 0.9rem;">This file includes a saved game. Continue your last progress, or start fresh from the original clues only.</p>
+      <div class="modal-actions">
+        <button type="button" id="resumeUploadFresh">Start fresh</button>
+        <button type="button" id="resumeUploadContinue">Continue progress</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+  <script src="{{ url_for('static', filename='js/solver-service.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/pdf-utils.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/upload-puzzle-parse.js') }}"></script>
+  <script>
+    const APP_MODE = "{{ mode if mode else 'experiment' }}";
+    const CREATE_VIEW = "{{ '1' if create_view else '0' }}" === '1';
+    const gridEl = document.getElementById('grid');
+    const resultEl = document.getElementById('result');
+    const solveBtn = document.getElementById('solveBtn');
+    const clearBtn = document.getElementById('clearBtn');
+    const downloadPuzzleBtn = document.getElementById('downloadPuzzleBtn');
+    const stopBtn = document.getElementById('stopBtn');
+    const HIDE_PDF_DOWNLOAD = "{{ '1' if hide_download_pdf_button else '0' }}" === '1';
+    const downloadModalBackdrop = document.getElementById('downloadModalBackdrop');
+    const downloadModalCancel = document.getElementById('downloadModalCancel');
+    const downloadModalConfirm = document.getElementById('downloadModalConfirm');
+    const resumeUploadBackdrop = document.getElementById('resumeUploadBackdrop');
+    const resumeUploadFresh = document.getElementById('resumeUploadFresh');
+    const resumeUploadContinue = document.getElementById('resumeUploadContinue');
+    const downloadFormatPdfLabel = document.getElementById('downloadFormatPdfLabel');
+    const sizeSelect = document.getElementById('sizeSelect');
+    const libraryList = document.getElementById('libraryList');
+    const loadBtn = document.getElementById('loadBtn');
+    const uploadPuzzleBtn = document.getElementById('uploadPuzzleBtn');
+    const subtitle = document.getElementById('subtitle');
+    const numberPad = document.getElementById('numberPad');
+    const algSelect = document.getElementById('algSelect');
+    const mtParams = document.getElementById('mtParams'); /* game mode only; experiment uses .exp-mt-only */
+    const solverProgressEl = document.getElementById('solverProgress');
+    const toastContainer = document.getElementById('toastContainer');
+    const appModalBackdrop = document.getElementById('appModalBackdrop');
+    const appModalTitle = document.getElementById('appModalTitle');
+    const appModalMessage = document.getElementById('appModalMessage');
+    const appModalInput = document.getElementById('appModalInput');
+    const appModalCancel = document.getElementById('appModalCancel');
+    const appModalConfirm = document.getElementById('appModalConfirm');
+    let activeJobId = null;
+    let lastSolvedPuzzle = null;
+
+    function syncMtParamsVisibility() {
+      if (!algSelect) return;
+      const alg = parseInt(algSelect.value, 10);
+      if (APP_MODE === 'experiment') {
+        document.querySelectorAll('.exp-mc-only').forEach(function(el) {
+          el.style.display = (alg === 3 || alg === 4) ? '' : 'none';
+        });
+        document.querySelectorAll('.exp-mt-only').forEach(function(el) {
+          el.style.display = alg === 4 ? '' : 'none';
+        });
+        return;
+      }
+      if (mtParams) mtParams.style.display = alg === 4 ? '' : 'none';
+    }
+    if (algSelect) {
+      algSelect.addEventListener('change', syncMtParamsVisibility);
+      syncMtParamsVisibility();
+    }
+    if (APP_MODE === 'game' && algSelect) {
+      algSelect.value = '4';
+      algSelect.disabled = true;
+      syncMtParamsVisibility();
+    }
+
+    const expPauseBtn = document.getElementById('expPauseBtn');
+    let expTimerPaused = false;
+    let expPauseClock = 0;
+    function syncPausedActionButtons() {
+      const eraseBtnEl = document.getElementById('eraseBtn');
+      if (expTimerPaused) {
+        if (clearBtn) clearBtn.disabled = true;
+        if (eraseBtnEl) eraseBtnEl.disabled = true;
+        if (solveBtn) solveBtn.disabled = true;
+        if (loadBtn) loadBtn.disabled = true;
+        if (uploadPuzzleBtn) uploadPuzzleBtn.disabled = true;
+      } else {
+        if (clearBtn) clearBtn.disabled = false;
+        if (eraseBtnEl) eraseBtnEl.disabled = false;
+        if (loadBtn) loadBtn.disabled = false;
+        if (uploadPuzzleBtn) uploadPuzzleBtn.disabled = false;
+        updateSolveButton();
+      }
+    }
+    if (expPauseBtn && (APP_MODE === 'experiment' || APP_MODE === 'game')) {
+      expPauseBtn.addEventListener('click', () => {
+        if (!expTimerPaused) {
+          if (userSolveStartTime == null) return;
+          expTimerPaused = true;
+          expPauseClock = Date.now();
+          document.body.classList.add('exp-play-paused');
+          syncPausedActionButtons();
+          if (subtitleTimerId) { clearInterval(subÙItleTimerID); sqbtitleTimerId = null; }
+    °   } else {ç
+          expDimerPaused = faÏse
+ †        document.fody.classListr%move('gxp-play-pauset');
+          syncPausedAktionButdons();M
+†   $     if (userSo$veWtartTime != nuld) {
+         $  userSglveStartTime += (Date.now() - expPatseClock+;
+ "      " }
+          af (userSolveSta2tTime !< jull && !subtitleTimerHd( {
+ `          sUbtitleTim%rId = sutInterval(updateSu`tktle, 1000);	
+      †  (}
+          updateSubtitle();
+        }
+      })ª
+  p }
+
+  † funcvion showToqst(message, iSError+ {
+    " if (!uoartContainer) returN;
+      const$t = dosuient.creatgElement('dmv');
+      t.#laswNim% = 'toart-itei' + (isError ? '!dRrobg z 'Ö);
+      t.textContent = Stvifo(message || '');
+      toastCÔntainer.a`pendChild(t);
+      setTÈmeout(() => {`t.remove(); },†2808);
+    }
+
+    functhon showMoeal(options) {      return new Promise((resoLve) > {
+        const o`ts =0options || {};
+     †  const santsInput = !!opts.withIjput;
+0     † appMod·lTitle.tex4Contgnt = oqtr/5itLe t| 'NOtice';J   " $  appo‰alMes3qgetexuCoftenT  opus.lessage`|l '';
+$    (  AprModa,Cancel.textConten| = opts.cancenText || 'Ccocel';
+   `    q0pModalConfibm.textContent!? op‰c.sonfirmText ||†'O[';
+   †    a0pMo$alCanCel.styËe.display = opts.{howCalcel!=== falsd0ø 'none' : '';ç
+     (  a0pEodalYNput.styÏeÆfistlay = wantsInput ? '' : 'nk~e&;J†      "appModalInput.vadue0= wantsInput!? (opts.D%faultValqu || '') :†'';
+  0  $  appModalBackdRmp/sÙQle.dhsplcy"= 'blex';
+
+  `   †const0cleanwp = () => {-
+          a`PMo`AlBackdrop.qtyle.fisplay % 'nonÂ';
+     ! $  avpModalConfirm.remoteEventLÈstejE2('click', onSgÓfkrm);
+          appModalCancen.rgmoveEvantÃysteodr('cLick', ofCancel):
+        ` appModalBackdrop.rmooveEvendlistener('clicj'¨ onBackdrop)9
+      ( };
+        const ononfirm } h) => {
+          const 6al =(WantÛInput 7 axpO/dalInput.vamue : %';
+†   $    ,sleanup,);    † "   resolvg({ confyrmed: truE, vaÏue: val });
+       (}ª
+    0   const onC·ncel =`() =~ {
+          cheanup()
+    0     rasolveh{ confirmel: /alse,`v`lue: '' });
+$       u;
+        const onBabk‰rop = (e) => {
+0 °  !    if0(e.target ?== ippModalBackdrop- onG!ncgh();
+ 0  †  `};
+" $     appMotamConfirm.addventListener('#lickß, onC/nfirl);
+        appMotal#ancel.a``EvdntListener('cliac', onKin„Em);
+        aptModalBdckdrgp.a‰dE6entListgndr(ßclicÎ',†o~Backdrop); (    $ if (wdntwInput) cetTimmout(( =~ appLodalInput,fmcus8), 0);
+      })
+$   }
+
+†   fugction pvomptRe3umeProgressOrFresh() {m
+      retern new @rom)se("unctyon (bes/lte- ;
+        if$(!reSuegUPloadBagkdrgp"|| !rÂsumeUploadFrEs` || !reÛumeTpLÔaeGn.tinue) {    0     resolve('cofÙifue')+
+    (     rÂdırn;
+       "}
+       `fu~ctÈ/n Îleafup() {J †   †    resumEUploadBac+drop.stylg.displaq = 'nond';à   "      rtsumeWploc‰Fresh.rdmovdEventHistenur('clIck', onFresh);
+          6e3umeUploadCo~t(nue.removeEven4Lisugn%2(gclick', onCo.tinue);J    (   0 resumeUp‰oadBcCkdzop.vemoveEvuntListene2(click', onBackdrop)9
+0  0  " }
+(  !!   functioN o~FreSh() ;
+! "      !clea.up();
+          reqomve®%gresh');0       }-      ` gunction onContinue(( {	$         cleajup();
+         `secolveh'cNtineÂ');	
+        ÌM
+       !fuoct˚on onBackdrkp(e) {
+    †    if`(e.target y== rÂsumeUxloadBackdrk0) {
+  !       ( gleanup();M
+      $!   0sesolve(n5lÌ);-
+          }
+    `   }
+   `   (resumuUplcddBaCkdrp.st}leÆdicplay(- 'fnex';
+ $     †sesumeUploidFrerh.adfEvgntListene2,clic+', o~FÚerh);
+    `   resuieUp|m`eConTknue.a`dEvenuListener('gdick', onContinue);
+        re3umeUpmoafBa„Kdro1*addEve.tlisten5r(#click, olBackdrop);
+    ( })+
+ 0  }
+    function openDmunloadO@tionsModql() {
+     †if (!downloadMo`alBa„kTrop) rettÚn;	
+      bon3Ù†voo4 = lownÏoqdMOdqlB!ckdrop;
+      c/nst cluesEl = roop.queryRelector('input[name="down,oalContent"][walUe="kluds"]');
+  "  !c/nst t8tEl = roOt.qUerySelector8'inpuunameΩ"do7nloadFormet"][valud="¸xp&]'®;    ( if (cluecEl) clua3E|.checked = true;
+†$ $  mf (tztEl9 tx|El.gheckef = true;
+      if (downloadFormatPdfLabel) {
+        downloadFormatPdfLabel.style.display = HIDE_PDF_DOWNLOAD ? 'none' : '';
+      }
+      downloadModalBackdrop.style.display = 'flex';
+    }
+
+    function closeDownloadOptionsModal() {
+      if (downloadModalBackdrop) downloadModalBackdrop.style.display = 'none';
+    }
+
+    async function ensureCreateRedirectPuzzleSavedForDownload() {
+      if (CREATE_VIEW || APP_MODE !== 'game') return true;
+      if (!isCreateRedirectPuzzleSource) return true;
+      const puzzleToSave = initialPuzzle || '';
+      if (!puzzleToSave || /^\.+$/.test(puzzleToSave)) return true;
+      const suggestedName = (currentPuzzleName && currentPuzzleName !== 'Created puzzle')
+        ? currentPuzzleName.replace(/\.[^.]*$/, '')
+        : ('created_' + getDefaultDownloadName(currentOrder));
+      try {
+        const saveRes = await saveCreatedPuzzleToLibrary(suggestedName, puzzleToSave, currentOrder);
+        if (saveRes && saveRes.duplicate) showToast('Created puzzle already exists in library.', false);
+        else showToast('Created puzzle added to library.', false);
+        isCreateRedirectPuzzleSource = false;
+        loadLibrary();
+        return true;
+      } catch (e) {
+        showResult({ error: (e && e.message) ? e.message : 'Failed to add created puzzle to library.' }, true);
+        return false;
+      }
+    }
+
+    async function runDownloadFromChoices() {
+      if (!downloadModalBackdrop) return;
+      const root = downloadModalBackdrop;
+      const content = (root.querySelector('input[name="downloadContent"]:checked') || {}).value || 'clues';
+      const format = (root.querySelector('input[name="downloadFormat"]:checked') || {}).value || 'txt';
+      if (HIDE_PDF_DOWNLOAD && format === 'pdf') {
+        showToast('PDF is not available in this view.', true);
+        return;
+      }
+
+      let puzzleStr;
+      if (content === 'clues') {
+        const p = initialPuzzle;
+        if (!p || !String(p).length || /^\.+$/.test(String(p))) {
+          showResult({ error: 'No puzzle loaded.' }, true);
+          return;
+        }
+        puzzleStr = p;
+      } else {
+        puzzleStr = gridToPuzzle();
+      }
+
+      closeDownloadOptionsModal();
+
+      const defaultName = getDefaultDownloadName(currentOrder);
+      const isPdf = format === 'pdf';
+      try {
+        const promptRes = await showModal({
+          title: 'Download',
+          message: isPdf ? 'Enter PDF filename (without extension):' : 'Enter filename (without extension):',
+          withInput: true,
+          defaultValue: defaultName,
+          confirmText: 'Download',
+          cancelText: 'Cancel'
+        });
+        if (!promptRes.confirmed) return;
+        const filename = (promptRes.value || defaultName).trim();
+        const savedOk = await ensureCreateRedirectPuzzleSavedForDownload();
+        if (!savedOk) return;
+
+        if (format === 'txt') {
+          let text;
+          if (content === 'clues') {
+            text = puzzleToInstanceText(puzzleStr, currentOrder);
+          } else {
+            const init = initialPuzzle;
+            if (!init || !String(init).length || /^\.+$/.test(String(init))) {
+              showResult({ error: 'No puzzle loaded.' }, true);
+              return;
+            }
+            text = puzzleInitialAndCurrentStateToText(currentOrder, init, gridToPuzzle());
+          }
+          const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+          const a = document.createElement('a');
+          a.href = URL.createObjectURL(blob);
+          a.download = filename.toLowerCase().endsWith('.txt') ? filename : (filename + '.txt');
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
+          URL.revokeObjectURL(a.href);
+          showToast('Download started.', false);
+        } else {
+          if (!window.PdfUtils) {
+            showResult({ error: 'PDF export is not available.' }, true);
+            return;
+          }
+          const sizePretty = getPdfSizeLabelPretty(currentOrder);
+          const downloadedAt = new Date().toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
+          if (content === 'clues') {
+            if (!window.PdfUtils.downloadPuzzleOnlyLayoutPdf) {
+              showResult({ error: 'PDF export is not available.' }, true);
+              return;
+            }
+            window.PdfUtils.downloadPuzzleOnlyLayoutPdf(puzzleStr, currentOrder, filename, sizePretty);
+          } else {
+            if (!window.PdfUtils.downloadInitialCurrentComparisonPdf) {
+              showResult({ error: 'PDF export is not available.' }, true);
+              return;
+            }
+            const init = initialPuzzle;
+            if (!init || !String(init).length || /^\.+$/.test(String(init))) {
+              showResult({ error: 'No puzzle loaded.' }, true);
+              return;
+            }
+            const solverParams = collectSolverParamsForPdf();
+            window.PdfUtils.downloadInitialCurrentComparisonPdf(init, gridToPuzzle(), currentOrder, filename, {
+              downloadedAt: downloadedAt,
+              puzzleSizeLabel: sizePretty,
+              solverParams: solverParams
+            });
+          }
+          showToast('PDF download started.', false);
+        }
+      } catch (e) {
+        showResult({ error: (e && e.message) ? e.message : 'Download failed.' }, true);
+      }
+    }
+
+    function setSolvingUiState(active) {
+      const controls = document.querySelectorAll('button, select, input, summary');
+      if (active) {
+        document.body.classList.add('ui-locked');
+        controls.forEach((el) => {
+          if (el === stopBtn) return;
+          el.dataset.prevDisabled = el.disabled ? '1' : '0';
+          el.disabled = true;
+        });
+        stopBtn.disabled = false;
+      } else {
+        document.body.classList.remove('ui-locked');
+        controls.forEach((el) => {
+          if (el === stopBtn) return;
+          const was = el.dataset.prevDisabled === '1';
+          if (!was) el.disabled = false;
+          delete el.dataset.prevDisabled;
+        });
+      }
+    }
+
+    const SIZES = { '9√ó9': 3, '16√ó16': 4, '25√ó25': 5 };
+    /** Default solver timeout (seconds) per grid size ‚Äî Experiment mode */
+    const EXPERIMENT_TIMEOUT_BY_SIZE = { '9√ó9': 5, '16√ó16': 20, '25√ó25': 120 };
+    /** Default solver timeout (seconds) per grid size ‚Äî Game mode (algorithm 4) */
+    const GAME_TIMEOUT_BY_SIZE = { '9√ó9': 9, '16√ó16': 30, '25√ó25': 180 };
+    const CELLS = { 3: 81, 4: 256, 5: 625 };
+    const MAX_VAL = { 3: 9, 4: 16, 5: 25 };
+
+    function timeoutMapForCurrentMode() {
+      return APP_MODE === 'game' ? GAME_TIMEOUT_BY_SIZE : EXPERIMENT_TIMEOUT_BY_SIZE;
+    }
+
+    function applyTimeoutForSizeLabel(sizeLabel) {
+      const el = document.getElementById('timeout');
+      const map = timeoutMapForCurrentMode();
+      if (!el || !Object.prototype.hasOwnProperty.call(map, sizeLabel)) return;
+      el.value = String(map[sizeLabel]);
+    }
+
+    /** Matches scripts/AblationScript.py: max_entropy then 92.5% rounded to 2 decimals */
+    function entropyThresholdFromAnts(numAnts) {
+      const n = Math.max(1, parseInt(String(numAnts), 10) || 1);
+      const maxEntropy = (-n) * ((1 / n) * Math.log2(1 / n));
+      return Math.round(0.87875 * maxEntropy * 100) / 100;
+    }
+
+    function applyEntropyThresholdFromAnts() {
+      if (APP_MODE === 'game') return;
+      const antsEl = document.getElementById('ants');
+      const entEl = document.getElementById('entropythreshold');
+      if (!antsEl || !entEl) return;
+      const n = parseInt(antsEl.value, 10);
+      if (!Number.isFinite(n) || n < 1) return;
+      entEl.value = String(entropyThresholdFromAnts(n));
+    }
+
+    const antsInput = document.getElementById('ants');
+    if (antsInput) {
+      antsInput.addEventListener('input', applyEntropyThresholdFromAnts);
+      antsInput.addEventListener('change', applyEntropyThresholdFromAnts);
+    }
+
+    let libraryData = {};
+    let currentOrder = 3;
+    let currentSizeLabel = '9√ó9';
+    let lastFocusedInput = null;
+    let undoStack = [];
+    let initialPuzzle = ''; // clues-only puzzle for current grid; used to know which cells are fixed when restoring undo
+    let savedCellIndex = null;  // cell index before current input (so we can snapshot state-before-typing)
+    let savedCellValue = '';
+    let fixedCellTooltipEl = null;
+    let fixedCellTooltipTimeout = null;
+    let currentPuzzleName = ''; // instance filename or "Default puzzle", "Created puzzle", "Empty grid"
+    let userSolveStartTime = null;
+    let subtitleTimerId = null;
+    let requireReloadAfterStop = false;
+    let requireReloadAfterSolved = false;
+    let pendingLibraryFocusPath = null;
+    let isUploadedPuzzleSource = false;
+    let isCreateRedirectPuzzleSource = false;
+    let createPuzzleSaved = false;
+
+    function updateDownloadPuzzleVisibility() {
+      if (!downloadPuzzleBtn) return;
+      downloadPuzzleBtn.style.display = isUploadedPuzzleSource ? 'none' : '';
+    }
+
+    function updateUndoButton() {
+      const btn = document.getElementById('undoBtn');
+      if (!btn) return;
+      btn.disabled = undoStack.length === 0;
+    }
+
+    function showFixedCellTooltip(cell) {
+      if (!cell) return;
+      if (!fixedCellTooltipEl) {
+        fixedCellTooltipEl = document.createElement('div');
+        fixedCellTooltipEl.className = 'cell-tooltip';
+        document.body.appendChild(fixedCellTooltipEl);
+      }
+      fixedCellTooltipEl.textContent = "Can't fill in a pre-filled cell";
+      const rect = cell.getBoundingClientRect();
+      fixedCellTooltipEl.style.left = (rect.left + rect.width / 2) + 'px';
+      fixedCellTooltipEl.style.top = rect.top + 'px';
+      fixedCellTooltipEl.classList.add('visible');
+      if (fixedCellTooltipTimeout) clearTimeout(fixedCellTooltipTimeout);
+      fixedCellTooltipTimeout = setTimeout(() => {
+        if (fixedCellTooltipEl) fixedCellTooltipEl.classList.remove('visible');
+      }, 1500);
+    }
+
+    function startUserSolveTimer() {
+      userSolveStartTime = Date.now();
+      if (!subtitleTimerId) subtitleTimerId = setInterval(updateSubtitle, 1000);
+    }
+    function clearUserSolveTimer() {
+      userSolveStartTime = null;
+      if (APP_MODE === 'experiment' || APP_MODE === 'game') {
+        expTimerPaused = false;
+        document.body.classList.remove('exp-play-paused');
+        syncPausedActionButtons();
+      }
+      if (subtitleTimerId) { clearInterval(subtitleTimerId); subtitleTimerId = null; }
+      updateSubtitle();
+    }
+    function updateSubtitle() {
+      if (!subtitle) return;
+      let timerStr = '0:00';
+      if (userSolveStartTime != null) {
+        const elapsed = Math.floor((Date.now() - userSolveStartTime) / 1000);
+        if (APP_MODE === 'experiment') {
+          const h = Math.floor(elapsed / 3600);
+          const m = Math.floor((elapsed % 3600) / 60);
+          const s = elapsed % 60;
+          timerStr = String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
+        } else {
+          const m = Math.floor(elapsed / 60);
+          const s = elapsed % 60;
+          timerStr = m + ':' + (s < 10 ? '0' : '') + s;
+        }
+      } else if (APP_MODE === 'experiment') {
+        timerStr = '00:00:00';
+      }
+      const name = currentPuzzleName || 'Puzzle';
+      if (APP_MODE === 'experiment') {
+        subtitle.textContent = '‚è± ' + name + ' ¬∑ ' + timerStr;
+      } else {
+        subtitle.textContent = name + ' ¬∑ ' + timerStr;
+      }
+    }
+    function checkUserCompleted() {
+      const inputs = gridEl.querySelectorAll('input');
+      if (!inputs.length) return false;
+      for (const inp of inputs) {
+        if (!inp.value.trim()) return false;
+        if (inp.classList.contains('conflict')) return false;
+      }
+      return true;
+    }
+    function showUserSolvedMessage(elapsedSec) {
+      resultEl.style.display = (APP_MODE === 'experiment') ? 'flex' : 'block';
+      resultEl.classList.remove('error');
+      const mins = Math.floor(elapsedSec / 60);
+      const secs = elapsedSec % 60;
+      const timeStr = mins > 0 ? mins + ' min ' + secs.toFixed(1) + ' s' : elapsedSec.toFixed(1) + ' s';
+      resultEl.innerHTML = '<strong class="time">Puzzle solved!</strong> You completed it in ' + timeStr + '.';
+    }
+
+    function snapshotGrid(overrideIndex, overrideDisplayValue) {
+      // Save current grid state. If overrideIndex/overrideDisplayValue provided, use that value for that cell (state before typing).
+      if (!gridEl.querySelector('input')) return;
+      const puzzle = gridToPuzzle(overrideIndex, overrideDisplayValue);
+      undoStack.push({ puzzle, order: currentOrder, initialPuzzle });
+      if (undoStack.length > 200) undoStack.shift();
+      updateUndoButton();
+    }
+
+    function restoreLastState() {
+      if (!undoStack.length) return;
+      const state = undoStack.pop();
+      if (!state) return;
+      savedCellIndex = null;
+      savedCellValue = '';
+      if (state.order !== currentOrder) {
+        createGrid(state.order);
+      }
+      initialPuzzle = state.initialPuzzle || '';
+      // Any undo invalidates the last solved snapshot used for PDF export.
+      lastSolvedPuzzle = null;
+      requireReloadAfterStop = false;
+      requireReloadAfterSolved = false;
+      puzzleToGrid(state.puzzle, state.order, initialPuzzle);
+      resultEl.style.display = 'none';
+      updateSolveButton();
+      updateUndoButton();
+      startUserSolveTimer();
+      updateSubtitle();
+    }
+
+    function selectCell(el) {
+      const inputs = gridEl.querySelectorAll('input');
+      inputs.forEach(inp => inp.classList.remove('peer-highlight'));
+      if (lastFocusedInput && lastFocusedInput !== el) {
+        lastFocusedInput.classList.remove('selected-cell');
+      }
+      lastFocusedInput = el;
+      if (el) {
+        el.classList.add('selected-cell');
+        if (el.classList.contains('fixed')) return;
+        const i = parseInt(el.dataset.index, 10);
+        if (Number.isNaN(i)) return;
+        const order = currentOrder;
+        const n = order * order;
+        const row = Math.floor(i / n);
+        const col = i % n;
+        const peerIndices = new Set();
+        for (let c = 0; c < n; c++) peerIndices.add(row * n + c);
+        for (let r = 0; r < n; r++) peerIndices.add(r * n + col);
+        const blockRow = Math.floor(row / order);
+        const blockCol = Math.floor(col / order);
+        const r0 = blockRow * order;
+        const c0 = blockCol * order;
+        for (let r = r0; r < r0 + order; r++) {
+          for (let c = c0; c < c0 + order; c++) {
+            peerIndices.add(r * n + c);
+          }
+        }
+        peerIndices.forEach(idx => {
+          if (inputs[idx] && inputs[idx] !== el) inputs[idx].classList.add('peer-highlight');
+        });
+      }
+    }
+
+    const UNDO_ICON = '<svg class="action-btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10h10a5 5 0 0 1 5 5v2M3 10l4-4M3 10l4 4"/></svg>';
+    const ERASE_ICON = '<svg class="action-btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 20H7l-4-4 4-4h13a1 1 0 0 1 1 1v6a1 1 0 0 1-1 1z"/><path d="M4 16l4-4"/><path d="M8 12l4 4"/></svg>';
+
+    function renderNumberPad(order) {
+      if (!numberPad) return;
+      numberPad.innerHTML = '';
+      const sideHost = document.getElementById('expSideActions');
+      if (sideHost) sideHost.innerHTML = '';
+      const isExp = document.body.classList.contains('experiment-mode');
+      const maxVal = MAX_VAL[order];
+
+      const actionRow = document.createElement('div');
+      actionRow.className = 'action-buttons';
+
+      const undoBtn = document.createElement('button');
+      undoBtn.type = 'button';
+      undoBtn.id = 'undoBtn';
+      undoBtn.className = 'action-btn';
+      undoBtn.innerHTML = UNDO_ICON + '<span class="action-btn-label">Undo</span>';
+      undoBtn.addEventListener('click', () => restoreLastState());
+      actionRow.appendChild(undoBtn);
+
+      const eraseBtn = document.createElement('button');
+      eraseBtn.type = 'button';
+      eraseBtn.id = 'eraseBtn';
+      eraseBtn.className = 'action-btn';
+      eraseBtn.innerHTML = ERASE_ICON + '<span class="action-btn-label">Erase</span>';
+      eraseBtn.disabled = expTimerPaused;
+      eraseBtn.addEventListener('click', () => {
+        const target = lastFocusedInput;
+        if (!target || target.classList.contains('fixed')) return;
+        snapshotGrid();
+        target.value = '';
+        target.classList.remove('filled');
+        updateSolveButton();
+        recomputeConflicts();
+        checkAndShowUserSolved();
+      });
+      actionRow.appendChild(eraseBtn);
+
+      if (isExp && sideHost) {
+        sideHost.appendChild(actionRow);
+      } else {
+        numberPad.appendChild(actionRow);
+      }
+
+      const digitRows = document.createElement('div');
+      digitRows.className = 'digit-rows';
+
+      let rowRanges;
+      if (isExp) {
+        if (order === 3) rowRanges = [[1, 5], [6, 9]];
+        else if (order === 4) rowRanges = [[1, 8], [9, 16]];
+        else rowRanges = [[1, 13], [14, 25]];
+      } else {
+        if (order === 3) rowRanges = [[1, 9]];
+        else if (order === 4) rowRanges = [[1, 8], [9, 16]];
+        else rowRanges = [[1, 10], [11, 20], [21, 25]];
+      }
+
+      for (const [lo, hi] of rowRanges) {
+        const digitRow = document.createElement('div');
+        digitRow.className = 'digit-row';
+        for (let v = lo; v <= hi; v++) {
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          btn.className = 'digit-btn';
+          btn.textContent = String(v);
+          btn.addEventListener('click', () => {
+            let target = lastFocusedInput;
+            if (!target) {
+              target = gridEl.querySelector('input');
+              if (!target) return;
+              target.focus();
+              selectCell(target);
+            }
+            if (target.classList.contains('fixed')) {
+              showFixedCellTooltip(target);
+              return;
+            }
+            snapshotGrid();
+            target.value = String(v);
+            target.classList.add('filled');
+          updateSolveButton();
+          recomputeConflicts();
+          checkAndShowUserSolved();
+        });
+        digitRow.appendChild(btn);
+      }
+      digitRows.appendChild(digitRow);
+    }
+      numberPad.appendChild(digitRows);
+      syncPausedActionButtons();
+      updateUndoButton();
+    }
+
+    /** Cell size (px) and font scale to fit narrow viewports; wider screens keep comfortable defaults. */
+    function getResponsiveGridCellMetrics(order) {
+      const n = order * order;
+      const vw = window.innerWidth || document.documentElement.clientWidth || 400;
+      const vh = window.innerHeight || document.documentElement.clientHeight || 700;
+      const main = document.querySelector('.main-area');
+      let usable = Math.max(200, (main ? main.getBoundingClientRect().width : vw) - 12);
+      if (document.body.classList.contains('experiment-mode')) {
+        const expHost = document.querySelector('.exp-sudoku-container');
+        const hostW = expHost ? expHost.getBoundingClientRect().width : 0;
+        if (hostW > 80) {
+          usable = Math.max(160, hostW - 8);
+        } else {
+          usable = Math.max(160, usable - 168);
+        }
+        const headerAndChrome = 92;
+        const belowGridReserve = 92;
+        const maxByHeight = Math.max(130, vh - headerAndChrome - belowGridReserve);
+        usable = Math.min(usable, 800, maxByHeight);
+      }
+      const pxCap = Math.floor((usable - 24) / n);
+      const remPx = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
+      const defaultCellPx = order === 3 ? 3 * remPx : order === 4 ? 2.3 * remPx : 1.6 * remPx;
+      const minCell = order === 3 ? 22 : order === 4 ? 14 : 8;
+      const maxCell = order === 3 ? 62 : order === 4 ; 46 : 32;
+      let cellPx;
+      if (doctment.body.classList.c/nt!ins('experiment-mode')) k        cellPx =†Math.max mi.Cell, Math.min(maxCall, pxCap)+;     !} else if (vw < 900) {
+      ""cellPx$= Meth.max(minCell,`Math.oÈn(maxCeÏl, pxSap));-
+   $  }†else {
+        cellPx = Math.max(minCell, Math.m)n(mazCell!´ 12,$degaultCellPx));
+      }
+      cnst0cemlSize = cellPx + 'px';
+      let fontPx = Math.max(
+     !3 orfer === 5 ? 10 : 11,
+        Math.min*order === 3 ? 26 : order === t ? 20 :"17, MatH*zoqnd(celdTx * (ordes === 3 ? 0/5": order === 4 ? 8.47 : 0.52))i
+      );      if (docume~Ù.body.classList.koltains 'expdzimenp-moee')) {
+        fontRx Ω Mathnceil(d/ntPx * 1.12);
+        fontPx = Math.max(fontpx, orddr === 7 ? 15 : Order === 4 ? 12 : order(== 5 ?(13 : 19);
+      }
+      const fontSize = fontPx + '`x';
+$     return { cellSize, fontSizE };
+    }
+
+    function createGrid(rder) {
+ †    lastFocusedMnput = null;
+      sqredCellIndex = numl;
+      savedCellValue = '';
+   !  const . = orldr * or‰er;
+   "  konst cells0= n * n;
+      ObidEl.innerHTML = '';
+ (    conSt maxVal = MAX_V@L[or‰er];
+      consv { cellSize, fontSize = = getResponwiveGbidCellMetrics(mrdeÚ);
+      oridEl.style.grmdTemplateCo,umns 5 `repeet(${n}, ${cellSizm})`;
+      grÈlEl.style.gridTemplateRows = `repeat(${n}, ${„ellSmze})‡;
+ 0    for (Ïet i Ω 0? m!< cÂlls; i´+) {
+        cofst ro = Math.floor(i$Ø"n);
+        const col = i % n;        const iNpwt Ω docwlent,creeteEle}ent('in0ut')ª
+       `input.tyte = 'text';
+    0   input.inputMmde = &numeric';
+        input&maxLength = order === 3 ? 1 : 2;
+        input.dataset.index Ω i;
+        input,style.fontSi~e = fonuSize-
+        if ((col + 1) % order === 0 && coL0!95 Ó†- 1) input.classList.add(/b,nck-2ight');
+        if$h(row + 1) % /rder === 0 && row !== f - 1) input.classlistÆadd('bloc{-bottom');
+        knput&addEventListeneR('fmbusß, () = {
+          selectCell(inpuı);
+          if!(!inpuT.clasÛLisv.contains('fixed')) {
+            savedBellIndex < input.datase4.inDex;
+ (          sa~edCellValue$= input.valwe;
+          }
+        });
+      0 input.addEventListener('clickg, () => select√all(input));
+        ijput.addEvent\istener('inpu4', function() {
+     0    if  !this.classLhst.c{ntains('fixed')) {
+          2 const )dx = parseInt®this*datasetnindex, 10);
+    $       snapshotgrid(idx$ savelCellValue);
+       †    savedCellIn`ex 5 idx;-J      "   }
+    (     let v 5 this.value.replace(/\D/g,!'');
+        ` if (maxVal`<= 9) {
+            vd= v.slice(0, 1);
+            if ®v$=== 0') v = '';	
+          } else z
+†           v = v.slice(0, 2);
+   0        if (!v) {
+  (           r =('';
+            } else {
+   0          const(num = parseInÙ(w, 10);
+         `0   iv (!Numcer.isFinite(num)"|| num <!1) {
+              ! v < '';
+ (            } else if (num > MaxVal) {
+           !    if((v.lengtx ==< 2) {
+    †      `  "  0const FirstDigit = parseIjt(v.charEt(0), 0(;
+(    ` $          v = (NuÌber.isFinite(fizsTDhgit) '& fiRstTigit >= 1 && fipstDafi|$<= maxVal) ? Strang(firstDÈgit) : '';
+                } else {
+         !(   (   v = '';
+    $           }      !      0}	
+  †   $   " }J      0   }
+ !        this.valUe = r{
+   0  0   )f (!this.classList.coftains('fixed')) savedCeLl^alue = v;
+ !        phis.classList.toÊglE('filled', v.trim() !== '');M
+          yf hv & maxVaÏ <= 9) {
+       "    const inputs = gridEl.querySelecvorAll('input');
+p           const idx`= parseInt tËis.dat·set.index- 1);
+ !          for (let a = idx + 1; i < inputs.lenGth;`Õ++) {J       0      const lext = inptts[i];
+  0           if"(!nuxp.classLIst.ConTains('fixed7) && !nexu.value.trkm()) {
+                next.focus();
+ †       !(     relecdCell(next)
+    !  $        break;ç
+$             }
+       !    }
+          }
+       $  recomputeCnfnictsh);       0  checkAndShowserSolved();
+    "   });
+  $     input.addAveotListener('keyd/wn', function(e) {
+  (       Èf$(%this.classLyst.contains('dixed')) {
+            savedCellIndex = this.dataset.index;
+            savedCellValue = this.value;
+          }
+          if (e.key === 'Backspace' && !this.value && this.previousElementSibling)
+            this.previousElementSibling.focus();
+        });
+        gridEl.appendChild(input);
+      }
+      currentOrder = order;
+      currentSizeLabel = Object.keys(SIZES).find(l => SIZES[l] === order) || '9√ó9';
+      renderNumberPad(order);
+    }
+
+    function order4DisplayToChar(v) {
+      const n = parseInt(v, 10);
+      if (n >= 1 && n <= 10) return String.fromCharCode(48 + n - 1);
+      if (n >= 11 && n <= 16) return String.fromCharCode(97 + n - 11);
+      return '.';
+    }
+    function order5DisplayToChar(v) {
+      const n = parseInt(v, 10);
+      if (n >= 1 && n <= 25) return String.fromCharCode(97 + n - 1);
+      return '.';
+    }
+    function order4CharToDisplay(ch) {
+      if (ch === '.') return '';
+      if (ch >= '0' && ch <= '9') return String(ch.charCodeAt(0) - 48 + 1);
+      if (ch >= 'a' && ch <= 'f') return String(ch.charCodeAt(0) - 97 + 11);
+      return '';
+    }
+    function order5CharToDisplay(ch) {
+      if (ch === '.') return '';
+      if (ch >= 'a' && ch <= 'y') return String(ch.charCodeAt(0) - 97 + 1);
+      return '';
+    }
+
+    function puzzleCharToInstanceValue(ch, order) {
+      if (ch === '.') return -1;
+      const c = String(ch).toLowerCase();
+      if (order === 3) return /[1-9]/.test(c) ? parseInt(c, 10) : -1;
+      if (order === 4) {
+        if (c >= '0' && c <= '9') return c.charCodeAt(0) - 48 + 1;
+        if (c >= 'a' && c <= 'f') return c.charCodeAt(0) - 97 + 11;
+        return -1;
+      }
+      if (order === 5) {
+        if (c >= 'a' && c <= 'y') return c.charCodeAt(0) - 97 + 1;
+        return -1;
+      }
+      return -1;
+    }
+
+    function puzzleToInstanceText(puzzle, order) {
+      const n = order * order;
+      const len = n * n;
+      const normalized = String(puzzle).padEnd(len, '.').slice(0, len);
+      const rows = [];
+      rows.push(String(order));
+      rows.push('0');
+      for (let r = 0; r < n; r++) {
+        const row = [];
+        for (let c = 0; c < n; c++) {
+          row.push(String(puzzleCharToInstanceValue(normalized[r * n + c], order)));
+        }
+        rows.push(row.join(' '));
+      }
+      return rows.join('\n') + '\n';
+    }
+
+    /** Space-separated instance rows (values per cell, -1 = empty) without header lines. */
+    function puzzleToInstanceDataRows(puzzle, order) {
+      const n = order * order;
+      const len = n * n;
+      const normalized = String(puzzle).padEnd(len, '.').slice(0, len);
+      const out = [];
+      for (let r = 0; r < n; r++) {
+        const row = [];
+        for (let c = 0; c < n; c++) {
+          row.push(String(puzzleCharToInstanceValue(normalized[r * n + c], order)));
+        }
+        out.push(row.join(' '));
+      }
+      return out;
+    }
+
+    /**
+     * .txt export when downloading initial puzzle + current UI state:
+     * order, placeholder 1, initial grid (-1 = empty), optional marker line, status line, then order, 1, current grid.
+     */
+    function puzzleInitialAndCurrentStateToText(order, initialPuzzleStr, currentPuzzleStr) {
+      const initialRows = puzzleToInstanceDataRows(initialPuzzleStr, order);
+      const currentRows = puzzleToInstanceDataRows(currentPuzzleStr, order);
+      const solved = checkUserCompleted();
+      const statusLine = solved
+        ? 'Current state of the puzzle in the UI (Solved)'
+        : 'Current state of the puzzle in the UI (Not solved)';
+      const parts = [
+        String(order),
+        '1',
+        ...initialRows,
+        '',
+        'end of the initial puzzle',
+        '',
+        statusLine,
+        '',
+        String(order),
+        '1',
+        ...currentRows
+      ];
+      return parts.join('\n') + '\n';
+    }
+
+    function getSizeLabelForFilename(order) {
+      if (order === 3) return '9x9';
+      if (order === 4) return '16x16';
+      if (order === 5) return '25x25';
+      return 'puzzle';
+    }
+
+    function getDateTimeStamp() {
+      const d = new Date();
+      const yyyy = d.getFullYear();
+      const mm = String(d.getMonth() + 1).padStart(2, '0');
+      const dd = String(d.getDate()).padStart(2, '0');
+      const hh = String(d.getHours()).padStart(2, '0');
+      const mi = String(d.getMinutes()).padStart(2, '0');
+      const ss = String(d.getSeconds()).padStart(2, '0');
+      return `${yyyy}-${mm}-${dd}_${hh}-${mi}-${ss}`;
+    }
+
+    function getDefaultDownloadName(order) {
+      return `(${getSizeLabelForFilename(order)})_${getDateTimeStamp()}`;
+    }
+
+    function getPdfSizeLabelPretty(order) {
+      if (order === 3) return '9 x 9';
+      if (order === 4) return '16 x 16';
+      if (order === 5) return '25 x 25';
+      return String(order);
+    }
+
+    /** Solver params for PDF when the visible grid matches the last solver solution (user clicked Solve). Plain ASCII labels; scope by algorithm (0 / 3 / 4). */
+    function collectSolverParamsForPdf() {
+      if (!lastSolvedPuzzle || gridToPuzzle() !== lastSolvedPuzzle) return null;
+      const algEl = document.getElementById('algSelect');
+      const algVal = algEl ? parseInt(algEl.value, 10) : 4;
+      const rows = [];
+
+      function algDisplayName() {
+        if (!algEl) return String(algVal);
+        const opt = algEl.options[algEl.selectedIndex];
+        return (opt && opt.text) ? opt.text.trim() : String(algVal);
+      }
+
+      function add(id, label) {
+        const el = document.getElementById(id);
+        if (el) rows.push({ label: label, value: String(el.value) });
+      }
+
+      rows.push({ label: 'Algorithm', value: algDisplayName() });
+      add('timeout', 'Timeout (sec)');
+      add('ants', 'Number of ants');
+      add('q0', 'q0');
+      add('rho', 'rho');
+      add('xi', 'xi');
+      add('evap', 'rho_BVE (best value evaporation)');
+
+      if (algVal === 3 || algVal === 4) {
+        add('numacs', 'ACS colonies');
+        add('entropythreshold', 'Entropy threshold');
+        add('convthreshold', 'Convergence threshold');
+      }
+
+      if (algVal === 4) {
+        add('threads', 'Number of threads');
+        add('commThreshold', 'Communication threshold');
+        add('commEarly', 'Early comm. interval');
+        add('commLate', 'Late comm. interval');
+      }
+
+      return rows;
+    }
+
+    function gridToPuzzle(overrideIndex, overrideDisplayValue) {
+      const inputs = gridEl.querySelectorAll('input');
+      const order = currentOrder;
+      const n = order * order;
+      const maxVal = MAX_VAL[order];
+      const out = [];
+      for (let i = 0; i < inputs.length; i++) {
+        const v = (overrideIndex !== undefined && overrideIndex !== null && i === parseInt(overrideIndex, 10))
+          ? (overrideDisplayValue !== undefined ? String(overrideDisplayValue || '').trim() : inputs[i].value.trim())
+          : inputs[i].value.trim();
+        if (!v) { out.push('.'); continue; }
+        if (order === 3) out.push(/^[1-9]$/.test(v) ? v : '.');
+        else if (order === 4) out.push(order4DisplayToChar(v));
+        else out.push(order5DisplayToChar(v));
+      }
+      return out.join('').slice(0, n * n);
+    }
+
+    function recomputeConflicts() {
+      const inputs = Array.from(gridEl.querySelectorAll('input'));
+      const order = currentOrder;
+      const n = order * order;
+      inputs.forEach(inp => inp.classList.remove('conflict'));
+
+      function markConflicts(indices) {
+        const seen = {};
+        for (const idx of indices) {
+          const v = inputs[idx].value.trim();
+          if (!v) continue;
+          const num = parseInt(v, 10);
+          if (!num || Number.isNaN(num)) continue;
+          if (!seen[num]) seen[num] = [];
+          seen[num].push(idx);
+        }
+        Object.values(seen).forEach(list => {
+          if (list.length > 1) {
+            list.forEach(i => inputs[i].classList.add('conflict'));
+          }
+        });
+      }
+
+      // Rows
+      for (let r = 0; r < n; r++) {
+        const idxs = [];
+        for (let c = 0; c < n; c++) idxs.push(r * n + c);
+        markConflicts(idxs);
+      }
+      // Columns
+      for (let c = 0; c < n; c++) {
+        const idxs = [];
+        for (let r = 0; r < n; r++) idxs.push(r * n + c);
+        markConflicts(idxs);
+      }
+      // Sub-grids
+      for (let br = 0; br < order; br++) {
+        for (let bc = 0; bc < order; bc++) {
+          const idxs = [];
+          const rowStart = br * order;
+          const colStart = bc * order;
+          for (let r = 0; r < order; r++) {
+            for (let c = 0; c < order; c++) {
+              const rr = rowStart + r;
+              const cc = colStart + c;
+              idxs.push(rr * n + cc);
+            }
+          }
+          markConflicts(idxs);
+        }
+      }
+    }
+
+    function checkAndShowUserSolved() {
+      if (userSolveStartTime == null) return;
+      if (!checkUserCompleted()) return;
+      const elapsedSec = (Date.now() - userSolveStartTime) / 1000;
+      clearUserSolveTimer();
+      showUserSolvedMessage(elapsedSec);
+    }
+
+    function puzzleToGrid(puzzle, order, cluesPuzzle) {
+      const inputs = gridEl.querySelectorAll('input');
+      const n = order * order;
+      const len = n * n;
+      const str = String(puzzle).padEnd(len, '.').slice(0, len);
+      const clues = cluesPuzzle != null ? String(cluesPuzzle).padEnd(len, '.').slice(0, len) : str;
+      for (let i = 0; i < inputs.length && i < len; i++) {
+        const ch = str[i];
+        let disp = '';
+        if (order === 3) disp = ch !== '.' && /[1-9]/.test(ch) ? ch : '';
+        else if (order === 4) disp = order4CharToDisplay(ch);
+        else disp = order5CharToDisplay(ch);
+        inputs[i].value = disp;
+        inputs[i].classList.remove('fixed', 'filled');
+        const isClue = order === 3
+          ? (clues[i] !== '.' && /[1-9]/.test(clues[i]))
+          : order === 4
+            ? (clues[i] !== '.' && order4CharToDisplay(clues[i]) !== '')
+            : (clues[i] !== '.' && order5CharToDisplay(clues[i]) !== '');
+        if (isClue) {
+          inputs[i].classList.add('fixed');
+          inputs[i].readOnly = true;
+        } else {
+          inputs[i].readOnly = false;
+          if (disp !== '') inputs[i].classList.add('filled');
+        }
+      }
+      recomputeConflicts();
+    }
+
+    function setSolution(puzzle, solution, order, instant) {
+      // Animate construction of the solver's solution so cells fill in progressively.
+      // If instant is true, fill all cells immediately (for real-time best_solution updates).
+      const inputs = gridEl.querySelectorAll('input');
+      const n = order * order;
+      const len = n * n;
+      const puz = String(puzzle).padEnd(len, '.').slice(0, len);
+      const sol = String(solution).padEnd(len, '.').slice(0, len);
+
+      const steps = [];
+
+      for (let i = 0; i < inputs.length && i < len; i++) {
+        let fixed = false;
+        if (order === 3) fixed = puz[i] !== '.' && /[1-9]/.test(puz[i]);
+        else if (order === 4) fixed = puz[i] !== '.' && order4CharToDisplay(puz[i]) !== '';
+        else fixed = puz[i] !== '.' && order5CharToDisplay(puz[i]) !== '';
+
+        let val = '';
+        if (order === 3) val = sol[i] !== '.' && /[1-9]/.test(sol[i]) ? sol[i] : '';
+        else if (order === 4) val = order4CharToDisplay(sol[i]);
+        else val = order5CharToDisplay(sol[i]);
+
+        // Fixed clues stay as-is; we only animate non-fixed cells.
+        inputs[i].classList.toggle('fixed', fixed);
+        inputs[i].readOnly = fixed;
+        if (fixed) {
+          // Ensure fixed cells show their final value immediately.
+          if (!inputs[i].value) inputs[i].value = val;
+          inputs[i].classList.remove('filled');
+        } else {
+          // Queue this non-fixed cell to be filled as part of the animation.
+          inputs[i].value = '';
+          inputs[i].classList.remove('filled');
+          if (val) steps.push({ index: i, value: val });
+        }
+      }
+
+      if (instant) {
+        steps.forEach(function(s) {
+          const inp = inputs[s.index];
+          if (inp) { inp.value = s.value; inp.classList.add('filled'); }
+        });
+        recomputeConflicts();
+        clearUserSolveTimer();
+        return;
+      }
+
+      // Shuffle steps so cells are filled in random order.
+      for (let i = steps.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [steps[i], steps[j]] = [steps[j], steps[i]];
+      }
+
+      let stepIndex = 0;
+      const batchSize = 12;   // cells per frame for a faster fill
+      const delayMs = 25;      // delay between frames (ms)
+
+      function applyNextBatch() {
+        if (stepIndex >= steps.length) {
+          recomputeConflicts();
+          clearUserSolveTimer();
+          return;
+        }
+        for (let k = 0; k < batchSize && stepIndex < steps.length; k++, stepIndex++) {
+          const { index, value } = steps[stepIndex];
+          const inp = inputs[index];
+          if (!inp) continue;
+          inp.value = value;
+          inp.classList.add('filled');
+        }
+        recomputeConflicts();
+        setTimeout(applyNextBatch, delayMs);
+      }
+
+      applyNextBatch();
+    }
+
+    function showResult(obj, isError) {
+      resultEl.style.display = (APP_MODE === 'experiment') ? 'flex' : 'block';
+      resultEl.classList.toggle('error', isError);
+      if (isError) {
+        resultEl.innerHTML = '<strong>Error</strong>: ' + (obj.error || 'Unknown error');
+        return;
+      }
+      const commText = obj.communication == null ? '?' : (obj.communication ? 'Triggered' : 'Not Triggered');
+      let html = '';
+      if (obj.success) {
+        html += '<div class="time">Execution Time: ' + (obj.time != null ? obj.time.toFixed(2) : '?') + ' seconds</div>';
+        html += '<div class="meta">Total Iterations: ' + (obj.iterations != null ? obj.iterations : '?') + '</div>';
+        html += '<div class="meta">Thread Communication: ' + commText + '</div>';
+      } else {
+        html += '<div class="meta" style="margin-bottom:0.5rem;">No solution within timeout.</div>';
+        html += '<div class="time">Execution Time: ' + (obj.time != null ? obj.time.toFixed(2) : '?') + ' seconds</div>';
+        html += '<div class="meta">Total Iterations: ' + (obj.iterations != null ? obj.iterations : '?') + '</div>';
+        html += '<div class="meta">Thread Communication: ' + commText + '</div>';
+      }
+      resultEl.innerHTML = html;
+    }
+
+    function refreshLibraryList() {
+      const size = sizeSelect.value;
+      const list = libraryData[size] || [];
+      libraryList.innerHTML = '';
+      list.forEach((item, idx) => {
+        const li = document.createElement('li');
+        li.textContent = item.name;
+        li.dataset.path = item.path;
+        li.dataset.index = idx;
+        li.addEventListener('click', () => {
+          libraryList.querySelectorAll('li').forEach(l => l.classList.remove('selected'));
+          li.classList.add('selected');
+        });
+        libraryList.appendChild(li);
+      });
+      if (!list.length) {
+        const li = document.createElement('li');
+        li.textContent = '(no instances for this size)';
+        li.style.pointerEvents = 'none';
+        li.style.opacity = '0.7';
+        libraryList.appendChild(li);
+      }
+    }
+
+    function focusLibraryPath(targetPath) {
+      if (!targetPath) return;
+      const wanted = String(targetPath);
+      const candidates = libraryList.querySelectorAll('li');
+      for (const li of candidates) {
+        if (li.dataset && li.dataset.path === wanted) {
+          candidates.forEach(x => x.classList.remove('selected'));
+          li.classList.add('selected');
+          try { li.scrollIntoView({ block: 'nearest' }); } catch (_) {}
+          pendingLibraryFocusPath = null;
+          return;
+        }
+      }
+    }
+
+    async function loadLibrary() {
+      try {
+        const r = await fetch('/api/library');
+        libraryData = await r.json();
+        refreshLibraryList();
+        if (pendingLibraryFocusPath) focusLibraryPath(pendingLibraryFocusPath);
+      } catch (e) {
+        libraryList.innerHTML = '<li style="color:#f7768e">Failed to load library</li>';
+      }
+    }
+
+    sizeSelect.addEventListener('change', () => {
+      applyTimeoutForSizeLabel(sizeSelect.value);
+      const newOrder = SIZES[sizeSelect.value];
+      if (newOrder !== currentOrder) {
+        currentOrder = newOrder;
+        currentSizeLabel = sizeSelect.value;
+        createGrid(currentOrder);
+        const len = CELLS[currentOrder];
+        initialPuzzle = '.'.repeat(len);
+        lastSolvedPuzzle = null;
+        requireReloadAfterStop = false;
+        requireReloadAfterSolved = false;
+        isUploadedPuzzleSource = false;
+        isCreateRedirectPuzzleSource = false;
+        updateDownloadPuzzleVisibility();
+        puzzleToGrid(initialPuzzle, currentOrder, initialPuzzle);
+        currentPuzzleName = 'Empty grid';
+        updateSubtitle();
+        resultEl.style.display = 'none';
+        updateSolveButton();
+        if (CREATE_VIEW) createPuzzleSaved = false;
+      }
+      refreshLibraryList();
+    });
+
+    loadBtn.addEventListener('click', async () => {
+      const sel = libraryList.querySelector('li.selected');
+      if (!sel || !sel.dataset.path) return;
+      const path = sel.dataset.path;
+      try {
+        snapshotGrid();
+        const r = await fetch('/api/instance/' + encodeURIComponent(path));
+        if (!r.ok) { const d = await r.json().catch(() => ({})); showResult(d, true); return; }
+        const data = await r.json();
+        const order = data.order;
+        const puzzle = data.puzzle;
+        createGrid(order);
+        sizeSelect.value = order === 3 ? '9√ó9' : order === 4 ? '16√ó16' : '25√ó25';
+        applyTimeoutForSizeLabel(sizeSelect.value);
+        initialPuzzle = puzzle;
+        lastSolvedPuzzle = null;
+        requireReloadAfterStop = false;
+        requireReloadAfterSolved = false;
+        isUploadedPuzzleSource = false;
+        isCreateRedirectPuzzleSource = false;
+        updateDownloadPuzzleVisibility();
+        puzzleToGrid(puzzle, order, puzzle);
+        currentPuzzleName = path.split('/').pop() || path;
+        resultEl.style.display = 'none';
+        startUserSolveTimer();
+        updateSolveButton();
+        updateSubtitle();
+      } catch (e) {
+        showResult({ error: e.message || 'Load failed' }, true);
+      }
+    });
+
+    const uploadPuzzleInput = document.getElementById('uploadPuzzleInput');
+    if (uploadPuzzleBtn && uploadPuzzleInput) {
+      uploadPuzzleBtn.addEventListener('click', function() {
+        uploadPuzzleInput.click();
+      });
+      uploadPuzzleInput.addEventListener('change', function(e) {
+        const file = e.target.files && e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = async function() {
+          try {
+            const text = reader.result;
+            const parseFn = window.UploadPuzzleParse && window.UploadPuzzleParse.parsePuzzleFileText;
+            if (typeof parseFn !== 'function') throw new Error('Puzzle parser is not loaded');
+            const parsed = parseFn(text);
+            if (!parsed.ok) throw new Error(parsed.error || 'Invalid puzzle file');
+            const order = parsed.order;
+            let puzzle = parsed.puzzle;
+            let initialPuzzleStr =
+              parsed.initialPuzzle != null ? parsed.initialPuzzle : puzzle;
+
+            if (parsed.format === 'dual' && parsed.progressNotSolved) {
+              const choice = await promptResumeProgressOrFresh();
+              if (choice === null) {
+                e.target.value = '';
+                return;
+              }
+              if (choice === 'fresh') {
+                puzzle = parsed.initialPuzzle;
+                initialPuzzleStr = parsed.initialPuzzle;
+              } else {
+                puzzle = parsed.currentPuzzle;
+                initialPuzzleStr = parsed.initialPuzzle;
+              }
+            } else if (P·rsud>fÔrmaT === 'Euelg && !parsed.prowres{No4RglveD+ {
+     †0   !`  /*0Solved /"Smmv5`Èn$fime:†Load`origi.al clues OjÏY, nov The cÔmlgteÏ ozid j/
+1    " !`  $  tujxla =°pirsml.inetyalPuZzle?    0   $†    )nkp!anPuxzlEStr =$parsmd.iÓitialP5zzLa;*       †  ` }
+
+        $  †let lirraryA!¸h(- .4lo{,
+†     0 $   tb9 {
+ "(  ``  0&  †aÔns41clÂckRdrp = await fd4„j(&?aqi/micÚaryo&i~d'- {	    "  p    $  †me|jd: 'POS\g,
+ (    "(" (†  $ jEadarr*†{%Con|ent-Type7z '!ppnmcation'j3on' w,
+ d          $  bŒ$y:(
+RGNÆst2iÆgify(y or$lr:Äordaz puz~,e:!iNitia-ZuzzÏeStÚ"<	!$ ` !  ` 0$  });é !" p  $   ` const$ohmckDate†=`awqit qËeckPeqq.jwol()/sapc`(funitiOn))` sapuro,{}; });
+        " " !yF†(s(eCkV≈wp.Ok!& chekkDat!.epiÛts f& A`acÔdada.MAech && khackDapa,matw¯,p!th+ [ (     $$       liBrasy‘AÙh`Ω sjebkDyvan)atkh,0itx;ä$†  0 p:  `" `yJ     §     !}0catch 8Z) {}
+   (      †jwnapshgtGrh@(	;
+      %    `eppmyUplkadddXezzlEDada®s     " ∞  $   order: ordgs,
+   !$       0!paxzle* pur˙le,I"    (  °     iomliÂmPUzzle: ijitÈ!lPÙzzleSts©
+  0†(       † nam!: bÎle"naÕg,ä   0     `$ †%fidenamt vime.name,ç
+   $  "  $  † dibbaryPath: Ïi„raryQeth
+  (         });      †   }!c·tkË )err) [(    $  $`  sxowToaÛt(err.mdqsaoÂ†|l %Failel |n pavsm pu˙rleÄbile.g, trıe){*0 "   $ " }
+d0 !!  †  e.targev.v`Lu% = &&;ä‡       };
+        rUq`q2.gnerror Ω fun„tion()¶{èä   °  ` (!ÛhowToart('Koqlp not read filu.', tpue);
+     †  ) e.Ùarcet/value$="'';
+  (  " !};
+  ""   0reader.readAsTexd(filE, %utf-');     });
+    ]
+ `  laÙ solˆyoG }"dalse;-
+
+    let _bdsIZeLayouTTimar = nell;
+ #  windowvaedEˆentLIrtdn$z(/rmqize'$()) =>4{M
+ 0 "  cleer‘imeku$(_resÈz%Layou|T{er)+
+$† 0 `^reSizeLayottTklep(=¢setTy-eou4:() <? {M* !  !   if 8soHvin'- puT5Rn{  $     try`{
+   "    0 const"xuzzh%  gvkdToPı:jla!);
+ 0  !    $„nst$orÊ =`curvenpO2der;
+!     !  $cknst init`= inktialQtzrlg;
+      (  (createGri$
+Ørd){J`         puxzlePoGÚif®pE:z.m,(ord, init);
+ "       0r%gGmputeConflictsh);
+ $  ! $ | catch 8_© {Ì
+ "    }, ≤509;
+a`2 }){-
+
+    buncuion anipRespoFsIveSi‰ePanel() ;-
+ `    cofst(·neL`= dgcuieNt.getEla}entByIl*.ri`mPa&elDetails//;ä  "   if!(!tanem9 Ûeturn;
+   (`pcÔns} mq =)wiÓdo_.}atc`Meei`(ß(-!x/width: (00px)g);
+$ $"( cofs4†siob ="*9 9> { panel.open = °m1.}at„hes; };J    0 if (typenf!mp
+¡dDE~e~titenlr0=== 'functiÎl' mq.a‰dE~eoTListeoer('chqjge',(s|nc)?
+†  "  alse if"(txpÂov iq>a‰dlkstener$=== 'gu.ction4) mq*qd`ÈstÂnur(synk	˘
+`0  0sqn`h)ªJ   #}
+    funb|ikn updat%RlveBup4o.() {
+)p    in (smhvi.g) reÙurn;M
+   *0 id`(SREATEO^AEW90{
+"  0(  hcon3t hasAoJfhict /`!gpidEl.queR¯QalestOR 'Ènput.conflict'+;
+ $     (solˆeBtn/fisablßd = iiC√lfÊm9ct;
+   ∞ 0 if (`ovnnÔadPuzzleBtN© DÔwjÏoaduzzleBt^ÆtÈsABÏed0= h`sGolFlmct;
+  0" a†`if (hakColnli£6) {*0"!       SoÏveBdnnÙ)dlu = 'Raqolwe c/fFlics bebore"plqqingg;
+       "  in )dovnlladPuzzleJtNi``ownl_adPuzzl%Bt~.title`= 'BMsonreacoÓÊlmcts beemre sa~ifg';
+ p( 0!" ]`e<W% {ä†$      ` so|~eBtn.T)T,e = 'Play t`ks0tszzle in$Game Mode';
+ $  `  0 !af (d/wllˇafPu˙znuadl)0dotnloadPu˙{leBtn&title =$#Save thks$quzzÏe tg Creqted Pu˙xle Ïi‚rary'{!$4Ä&"  }-
+      ® return;- `  `"|
+0     cÔÓst puzzle 5$yjitialQ}zzle || grIdTo@uzzle$); 0!   #Ìnbt$as¡opty < ruzz,e.)nclwdeq(&.'(;à   "  const hAsCo^flicw =°%!G2idEl.querISul5ct+r('inpu},conflAcr'){      ro|FeBtf.d)sablef <`!hisDmptY;0!    if$($oˆnÏmadYuZzÏ%Btn) ;J  `     d/wn,oAdXuzzheZt˛>`lqabNed - ipsS/n∆,act;
+(  0  ( tkw~DoadPu~zmeB|n.‘ytlm! ËSCo^f|i„t ? 'RecomvE cojfli{ts$begobebdow~loadi.g' 2 'DognlOad'; 0†$  }
+ !    iF 	!ÏksMmqty)03olveBtn.tiple = Gsid as"!|seavy ¶]nm¶:	
+& " helse if`,rqquireTeloadAftebStq <8$requireSeloadAft%rCßÓved9$solveBtn.tkfLe$= '|oad the selected file†‚enore solvhng'?
+  ‡  lse"soÌvu
+pn.titÓe = gSlve`tËg(puzzÏdg?Mä0$  =
+    ·sync!&ulcuyon savmCreaıe`Pu˙z(eToLiBrari(fIlenamd, pw:[,Ìl or‰dr) {
+   "  cnst response8= „w·it vetchl'/!xi?save≠cRea4%e,({
+ $    !`mgfhÔd8§fPOST',M
+   @"  hdedG¯s>[ ßCo~tend•Typ%: Áe‡rhicaÙIonØzson' },ç
+    †  *‚ody> JWO^.cvrinw)fy([
+$  h  "   filename: filename,
+          puzzle: puzzle,
+          order: order
+        })
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || ('Server error ' + response.status));
+      if (data.path) sessionStorage.setItem('lastCreatedLibraryPath', data.path);
+      createPuzzleSaved = true;
+      return data;
+    }
+
+    async function saveCreatedPuzzleWithPrompt() {
+      const basePuzzle = gridToPuzzle();
+      if (!basePuzzle) {
+        showResult({ error: 'No puzzle loaded.' }, true);
+        return { saved: false };
+      }
+      const defaultName = getDefaultDownloadName(currentOrder);
+      const promptRes = await showModal({
+        title: 'Save Puzzle',
+        message: 'Enter puzzle filename (without extension):',
+        withInput: true,
+        defaultValue: defaultName,
+        confirmText: 'Save',
+        cancelText: 'Cancel'
+      });
+      if (!promptRes.confirmed) return { saved: false };
+      const filename = (promptRes.value || defaultName).trim();
+      const saveRes = await saveCreatedPuzzleToLibrary(filename, basePuzzle, currentOrder);
+      if (saveRes.duplicate) showToast('Puzzle already exists in Created Puzzle library.', false);
+      else showToast('Puzzle saved to Created Puzzle library.', false);
+      return { saved: true, puzzle: basePuzzle, order: currentOrder };
+    }
+
+    gridEl.addEventListener('input', updateSolveButton);
+    gridEl.addEventListener('change', updateSolveButton);
+    if (CREATE_VIEW) {
+      const markUnsaved = () => { createPuzzleSaved = false; };
+      gridEl.addEventListener('input', markUnsaved);
+      gridEl.addEventListener('change', markUnsaved);
+    }
+
+    solveBtn.addEventListener('click', async () => {
+      if (CREATE_VIEW) {
+        if (gridEl.querySelector('input.conflict')) {
+          showResult({ error: 'Resolve conflicts before playing this puzzle.' }, true);
+          return;
+        }
+        let puzzle = gridToPuzzle();
+        let order = currentOrder;
+        if (!createPuzzleSaved) {
+          const decision = await showModal({
+            title: 'Progress not saved',
+            message: 'This puzzle is not saved yet. Continue without saving, or save first?',
+            confirmText: 'Continue',
+            cancelText: 'Save'
+          });
+          if (!decision.confirmed) {
+            try {
+              const saved = await saveCreatedPuzzleWithPrompt();
+              if (!saved.saved) return;
+              puzzle = saved.puzzle;
+              order = saved.order;
+            } catch (e) {
+              showResult({ error: (e && e.message) ? e.message : 'Failed to save created puzzle.' }, true);
+              return;
+            }
+          }
+        }
+        const payload = { order, puzzle, name: 'Created puzzle' };
+        sessionStorage.setItem('createdPuzzle', JSON.stringify(payload));
+        window.location.href = '/game';
+        return;
+      }
+      if (requireReloadAfterStop) {
+        await showModal({
+          title: 'Solver stopped',
+          message: 'Solver was stopped. Please load the puzzle again before solving.',
+          showCancel: false,
+          confirmText: 'OK'
+        });
+        return;
+      }
+      if (requireReloadAfterSolved) {
+        await showModal({
+          title: 'Puzzle solved',
+          message: 'Puzzle is already solved. Please load the selected file before clicking Solve again.',
+          showCancel: false,
+          confirmText: 'OK'
+        });
+        return;
+      }
+      const puzzle = initialPuzzle || gridToPuzzle();
+      if (!puzzle.includes('.')) {
+        showResult({ error: 'Grid is already full' }, true);
+        return;
+      }
+
+      if (APP_MODE !== 'game') {
+        const evapVal = parseFloat(document.getElementById('evap').value);
+        if (isNaN(evapVal) || evapVal <= 0 || evapVal >= 1) {
+          await showModal({
+            title: 'Invalid parameter',
+            message: 'Invalid rho_BVE (--evap): use a value strictly between 0 and 1.',
+            showCancel: false,
+            confirmText: 'OK'
+          });
+          return;
+        }
+      }
+
+      snapshotGrid();
+      if (solverProgressEl) solverProgressEl.textContent = '';
+      solving = true;
+      solveBtn.disabled = true;
+      if (stopBtn) stopBtn.classList.add('running');
+      setSolvingUiState(true);
+      resultEl.style.display = (APP_MODE === 'experiment') ? 'flex' : 'block';
+      resultEl.classList.remove('error');
+      resultEl.innerHTML = 'Solving...';
+      resultEl.classList.add('loading');
+
+      const timeoutMap = timeoutMapForCurrentMode();
+      const timeout = parseInt(document.getElementById('timeout').value, 10) || timeoutMap[sizeSelect.value] || (APP_MODE === 'game' ? 9 : 5);
+      const timeoutMs = (timeout + 20) * 1000;
+      const payload = {
+        puzzle,
+        timeout,
+        order: currentOrder
+      };
+
+      if (APP_MODE === 'game') {
+        payload.alg = 4;
+        payload.threads = parseInt(document.getElementById('threads').value, 10) || 5;
+        payload.ants = parseInt(document.getElementById('ants').value, 10) || 3;
+        payload.numacs = parseInt(document.getElementById('numacs').value, 10) || 6;
+        payload.q0 = parseFloat(document.getElementById('q0').value) || 0.9;
+        payload.rho = parseFloat(document.getElementById('rho').value) || 0.99;
+        payload.xi = parseFloat(document.getElementById('xi').value) || 0.1;
+        payload.evap = parseFloat(document.getElementById('evap').value) || 0.0125;
+        payload.convthreshold = parseFloat(document.getElementById('convthreshold').value) || 0.4;
+        payload.entropythreshold = parseFloat(document.getElementById('entropythreshold').value) || 1.39;
+        payload.commThreshold = parseInt(document.getElementById('commThreshold').value, 10) || 200;
+        payload.commEarly = parseInt(document.getElementById('commEarly').value, 10) || 120;
+        payload.commLate = parseInt(document.getElementById('commLate').value, 10) || 5;
+      } else {
+        payload.threads = parseInt(document.getElementById('threads').value, 10) || 5;
+        payload.ants = parseInt(document.getElementById('ants').value, 10) || 3;
+        payload.numacs = parseInt(document.getElementById('numacs').value, 10) || 2;
+        payload.q0 = parseFloat(document.getElementById('q0').value) || 0.9;
+        payload.rho = parseFloat(document.getElementById('rho').value) || 0.9;
+        payload.xi = parseFloat(document.getElementById('xi').value) || 0.1;
+        payload.evap = parseFloat(document.getElementById('evap').value) || 0.005;
+        payload.convthreshold = parseFloat(document.getElementById('convthreshold').value) || 0.8;
+        payload.entropythreshold = parseFloat(document.getElementById('entropythreshold').value) || entropyThresholdFromAnts(parseInt(document.getElementById('ants').value, 10) || 3);
+        payload.commThreshold = parseInt(document.getElementById('commThreshold').value, 10) || 200;
+        payload.commEarly = parseInt(document.getElementById('commEarly').value, 10) || 100;
+        payload.commLate = parseInt(document.getElementById('commLate').value, 10) || 10;
+        payload.alg = parseInt(algSelect.value, 10);
+      }
+
+      try {
+        const postData = await window.SolverService.startSolve(payload);
+        if (!postData.job_id) {
+          resultEl.classList.remove('loading');
+          showResult(postData, !!postData.error);
+          if (postData.success && postData.solution) {
+            lastSolvedPuzzle = postData.solution;
+            requireReloadAfterSolved = true;
+            setSolution(puzzle, postData.solution, currentOrder, false);
+          }
+          return;
+        }
+
+        activeJobId = postData.job_id;
+        const statusData = await window.SolverService.pollJob(activeJobId, {
+          timeoutMs: timeoutMs,
+          intervalMs: 150,
+          onUpdate: function (data) {
+            if (data.progress && solverProgressEl) {
+              const p = data.progress;
+              solverProgressEl.textContent = 'Iteration ' + p.iteration + ' - best-so-far ' + p.filled + ' / ' + p.total + ' cells';
+            }
+            if (data.best_solution) {
+              lastSolvedPuzzle = data.best_solution;
+              setSolution(puzzle, data.best_solution, currentOrder, true);
+            }
+          }
+        });
+
+        resultEl.classList.remove('loading');
+        const res = statusData.result || {};
+        if (solverProgressEl) {
+          if (res.iterations != null && statusData.progress) {
+            const p = statusData.progress;
+            solverProgressEl.textContent = 'Iteration ' + res.iterations + ' - best-so-far ' + p.filled + ' / ' + p.total + ' cells';
+          } else if (statusData.progress) {
+            const p = statusData.progress;
+            solverProgressEl.textContent = 'Iteration ' + p.iteration + ' - best-so-far ' + p.filled + ' / ' + p.total + ' cells';
+          }
+        }
+        if (statusData.status === 'stopped') {
+          showResult({ error: 'Stopped by user' }, true);
+        } else if (statusData.status === 'error' && res.error) {
+          showResult(res, true);
+        } else {
+          showResult(res, !!res.error);
+          if (res.success && res.solution) {
+            lastSolvedPuzzle = res.solution;
+            requireReloadAfterSolved = true;
+            setSolution(puzzle, res.solution, currentOrder, false);
+          }
+        }
+      } catch (e) {
+        resultEl.classList.remove('loading');
+        const msg = e && e.message ? e.message : 'Network error';
+        showResult({ error: msg }, true);
+      } finally {
+        solving = false;
+        activeJobId = null;
+        if (stopBtn) stopBtn.classList.remove('running');
+        setSolvingUiState(false);
+        updateSolveButton();
+      }
+    });
+
+    stopBtn.addEventListener('click', async () => {
+      if (!activeJobId) return;
+      stopBtn.disabled = true;
+      try {
+        await window.SolverService.stopSolve(activeJobId);
+        requireReloadAfterStop = true;
+        resultEl.classList.remove('loading');
+        showResult({ error: 'Stopped by user' }, true);
+      } catch (e) {
+        showResult({ error: (e && e.message) ? e.message : 'Failed to stop solver' }, true);
+      } finally {
+        stopBtn.disabled = false;
+      }
+    });
+
+    if (downloadModalCancel) {
+      downloadModalCancel.addEventListener('click', closeDownloadOptionsModal);
+    }
+    if (downloadModalBackdrop) {
+      downloadModalBackdrop.addEventListener('click', function(e) {
+        if (e.target === downloadModalBackdrop) closeDownloadOptionsModal();
+      });
+    }
+    if (downloadModalConfirm) {
+      downloadModalConfirm.addEventListener('click', function() {
+        void runDownloadFromChoices();
+      });
+    }
+
+    downloadPuzzleBtn.addEventListener('click', async () => {
+      if (CREATE_VIEW) {
+        if (gridEl.querySelector('input.conflict')) {
+          showResult({ error: 'Resolve conflicts before saving this puzzle.' }, true);
+          return;
+        }
+        try {
+          await saveCreatedPuzzleWithPrompt();
+          loadLibrary();
+        } catch (e) {
+          showResult({ error: (e && e.message) ? e.message : 'Failed to save created puzzle.' }, true);
+        }
+        return;
+      }
+      openDownloadOptionsModal();
+    });
+
+    if (clearBtn) {
+      clearBtn.addEventListener('click', () => {
+        const len = CELLS[currentOrder] || 81;
+        snapshotGrid();
+        initialPuzzle = '.'.repeat(len);
+        lastSolvedPuzzle = null;
+        requireReloadAfterStop = false;
+        requireReloadAfterSolved = false;
+        isUploadedPuzzleSource = false;
+        isCreateRedirectPuzzleSource = false;
+        updateDownloadPuzzleVisibility();
+        puzzleToGrid(initialPuzzle, currentOrder, initialPuzzle);
+        currentPuzzleName = 'Empty grid';
+        resultEl.style.display = 'none';
+        clearUserSolveTimer();
+        updateSolveButton();
+        updateSubtitle();
+        if (CREATE_VIEW) createPuzzleSaved = false;
+      });
+    }
+
+    function applyUploadedPuzzleData(data) {
+      const order = data.order;
+      const gridPuzzle = data.puzzle;
+      if (!order || !gridPuzzle || ![3, 4, 5].includes(order)) return false;
+      const init = data.initialPuzzle != null ? data.initialPuzzle : gridPuzzle;
+      createGrid(order);
+      sizeSelect.value = order === 3 ? '9√ó9' : order === 4 ? '16√ó16' : '25√ó25';
+      applyTimeoutForSizeLabel(sizeSelect.value);
+      initialPuzzle = init;
+      lastSolvedPuzzle = null;
+      requireReloadAfterStop = false;
+      requireReloadAfterSolved = false;
+      isUploadedPuzzleSource = true;
+      isCreateRedirectPuzzleSource = false;
+      updateDownloadPuzzleVisibility();
+      puzzleToGrid(gridPuzzle, order, init);
+      currentPuzzleName = data.name || data.filename || 'Uploaded puzzle';
+      pendingLibraryFocusPath = data.libraryPath || null;
+      resultEl.style.display = 'none';
+      undoStack = [];
+      updateUndoButton();
+      startUserSolveTimer();
+      loadLibrary();
+      updateSubtitle();
+      updateSolveButton();
+      if (CREATE_VIEW) createPuzzleSaved = false;
+      return true;
+    }
+
+    (function init() {
+      const params = new URLSearchParams(window.location.search);
+      const sizeParam = (params.get('size') || '').toLowerCase();
+      const sizeMap = { '9x9': '9√ó9', '16x16': '16√ó16', '25x25': '25√ó25' };
+      const initialSize = sizeMap[sizeParam] || '9√ó9';
+      const initialOrder = SIZES[initialSize] || 3;
+
+      createGrid(initialOrder);
+      sizeSelect.value = initialSize;
+      applyTimeoutForSizeLabel(initialSize);
+      if (APP_MODE !== 'game') applyEntropyThresholdFromAnts();
+      updateSolveButton();
+      updateUndoButton();
+
+      if (CREATE_VIEW) {
+        const len = CELLS[initialOrder] || 81;
+        initialPuzzle = '.'.repeat(len);
+        lastSolvedPuzzle = null;
+        requireReloadAfterStop = false;
+        requireReloadAfterSolved = false;
+        isUploadedPuzzleSource = false;
+        isCreateRedirectPuzzleSource = false;
+        updateDownloadPuzzleVisibility();
+        puzzleToGrid(initialPuzzle, initialOrder, initialPuzzle);
+        currentPuzzleName = 'Created puzzle';
+        resultEl.style.display = 'none';
+        clearUserSolveTimer();
+        updateSolveButton();
+        updateSubtitle();
+        createPuzzleSaved = false;
+        loadLibrary();
+        initResponsiveSidePanel();
+        return;
+      }
+
+      const uploaded = sessionStorage.getItem('uploadedPuzzle');
+      if (uploaded) {
+        try {
+          const data = JSON.parse(uploaded);
+          sessionStorage.removeItem('uploadedPuzzle');
+          if (applyUploadedPuzzleData(data)) return;
+        } catch (_) {}
+      }
+
+      const created = sessionStorage.getItem('createdPuzzle');
+      if (created) {
+        try {
+          const data = JSON.parse(created);
+          const { order, puzzle } = data;
+          sessionStorage.removeItem('createdPuzzle');
+          if (order && puzzle && [3, 4, 5].includes(order)) {
+            createGrid(order);
+            sizeSelect.value = order === 3 ? '9√ó9' : order === 4 ? '16√ó16' : '25√ó25';
+            applyTimeoutForSizeLabel(sizeSelect.value);
+            initialPuzzle = puzzle;
+            lastSolvedPuzzle = null;
+            requireReloadAfterStop = false;
+            requireReloadAfterSolved = false;
+            isUploadedPuzzleSource = false;
+            isCreateRedirectPuzzleSource = true;
+            updateDownloadPuzzleVisibility();
+            puzzleToGrid(puzzle, order, puzzle);
+            currentPuzzleName = data.name || (data.filename) || 'Created puzzle';
+            pendingLibraryFocusPath = data.libraryPath || sessionStorage.getItem('lastCreatedLibraryPath') || null;
+            startUserSolveTimer();
+            loadLibrary();
+            updateSubtitle();
+            return;
+          }
+        } catch (_) {}
+      }
+
+      if (initialSize === '9√ó9') {
+        initialPuzzle = '5.....89..3....2.......23..1.3....6......6738...9.5..2.....9523..5....79.......8.';
+        lastSolvedPuzzle = null;
+        requireReloadAfterStop = false;
+        requireReloadAfterSolved = false;
+        isUploadedPuzzleSource = false;
+        isCreateRedirectPuzzleSource = false;
+        updateDownloadPuzzleVisibility();
+        puzzleToGrid(initialPuzzle, 3, initialPuzzle);
+        currentPuzzleName = 'Default puzzle';
+        startUserSolveTimer();
+      } else {
+        const len = CELLS[initialOrder] || 81;
+        initialPuzzle = '.'.repeat(len);
+        lastSolvedPuzzle = null;
+        requireReloadAfterStop = false;
+        requireReloadAfterSolved = false;
+        isUploadedPuzzleSource = false;
+        isCreateRedirectPuzzleSource = false;
+        updateDownloadPuzzleVisibility();
+        puzzleToGrid(initialPuzzle, initialOrder, initialPuzzle);
+        currentPuzzleName = 'Empty grid';
+      }
+      updateSubtitle();
+      loadLibrary();
+      initResponsiveSidePanel();
+    })();
+  </script>
+</body>
+</html>

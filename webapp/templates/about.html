@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>About - SudoSLVRR</title>
+    
+    <style>
+        /* --- 1. IMPORTING YOUR CUSTOM FONT (FLASK READY) --- */
+        @font-face {
+            font-family: 'VAG Rounded Next Shine';
+            src: url("{{ url_for('static', filename='fonts/iCielVAGRoundedNextShine-Regular.otf') }}") format('opentype');
+            font-weight: normal;
+            font-style: normal;
+        }
+
+        /* --- 2. BASE & BACKGROUND SETUP --- */
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background-color: #000000; /* Pure black background */
+            margin: 0;
+            padding: 40px 20px;
+            display: flex;
+            justify-content: center;
+            line-height: 1.6;
+        }
+
+        /* --- 3. MAIN CONTENT PANEL (Cream Theme) --- */
+        .content-panel {
+            background-color: #fcebd5; /* Cream background */
+            border-radius: 20px;
+            padding: 50px;
+            max-width: 800px;
+            width: 100%;
+            border: 4px solid #5a1d08; /* Dark brown border */
+            box-shadow: inset 0px 0px 10px rgba(0,0,0,0.1), 0px 10px 30px rgba(0, 0, 0, 0.6);
+            text-align: left;
+            position: relative;
+        }
+
+        /* --- 4. TYPOGRAPHY --- */
+        h1 {
+            font-family: 'VAG Rounded Next Shine', sans-serif;
+            font-size: 48px;
+            text-align: center;
+            margin-top: 0;
+            color: #902C21; 
+            text-transform: uppercase;
+            text-shadow: 2px 2px 0px rgba(255,255,255,0.6); 
+        }
+
+        h2 {
+            font-family: 'VAG Rounded Next Shine', sans-serif;
+            font-size: 32px;
+            margin-top: 40px;
+            color: #902C21;
+            border-bottom: 3px solid rgba(90, 29, 8, 0.2);
+            padding-bottom: 10px;
+        }
+
+        h3 {
+            font-family: 'VAG Rounded Next Shine', sans-serif;
+            font-size: 24px;
+            color: #902C21;
+            margin-top: 25px;
+            margin-bottom: 10px;
+        }
+
+        p, ul, li {
+            font-size: 18px;
+            color: #5a1d08; 
+            font-weight: 500;
+        }
+
+        p {
+            text-align: justify;
+            margin-bottom: 15px;
+        }
+
+        ul {
+            padding-left: 20px;
+        }
+
+        li {
+            margin-bottom: 10px;
+        }
+
+        /* --- 5. HIGHLIGHT BOXES & LINKS --- */
+        .highlight-box {
+            background-color: #fdd89c; /* Slightly darker orange-cream */
+            border: 3px solid #5a1d08;
+            border-radius: 12px;
+            padding: 25px;
+            margin: 30px 0;
+            box-shadow: inset 0px 2px 5px rgba(0,0,0,0.1);
+        }
+
+        .developer-box {
+            background-color: rgba(90, 29, 8, 0.05);
+            border-left: 5px solid #902C21;
+            padding: 15px 25px;
+            margin-top: 20px;
+            border-radius: 0 12px 12px 0;
+        }
+
+        .developer-box p {
+            margin: 5px 0;
+        }
+
+        /* Styling for the developer links */
+        .dev-link {
+            color: #902C21;
+            text-decoration: none;
+            font-weight: bold;
+            transition: color 0.2s ease;
+        }
+
+        .dev-link:hover {
+            color: #fcab3a; /* Orange hover effect */
+            text-decoration: underline;
+        }
+
+        /* --- 6. COPYRIGHT FOOTER --- */
+        .copyright {
+            text-align: center;
+            font-size: 14px;
+            color: #902C21;
+            margin-top: 50px;
+            font-weight: bold;
+            opacity: 0.8;
+        }
+
+        /* --- 7. BACK BUTTON --- */
+        .back-btn-container {
+            display: flex;
+            justify-content: center;
+            margin-top: 30px;
+        }
+
+        .menu-btn {
+            display: inline-block;
+            text-decoration: none;
+            text-align: center;
+            font-family: 'VAG Rounded Next Shine', sans-serif;
+            font-weight: normal;
+            width: 250px;
+            padding: 15px 0;
+            font-size: 22px;
+            color: #902C21;
+            text-transform: uppercase;
+            background-color: #fcab3a;
+            border-radius: 50px;
+            border: 4px solid #5a1d08;
+            box-shadow: 
+                inset 0px 5px 0px rgba(255, 220, 140, 0.7),
+                inset 0px -6px 0px rgba(212, 107, 21, 0.8),
+                0px 6px 10px rgba(0, 0, 0, 0.5);
+            transition: transform 0.1s ease, box-shadow 0.1s ease, background-color 0.2s ease;
+        }
+
+        .menu-btn:hover {
+            background-color: #fdb752;
+            transform: translateY(-2px);
+            box-shadow: 
+                inset 0px 5px 0px rgba(255, 220, 140, 0.8),
+                inset 0px -6px 0px rgba(212, 107, 21, 0.8),
+                0px 10px 15px rgba(0, 0, 0, 0.6);
+        }
+
+        .menu-btn:active {
+            transform: translateY(4px);
+            box-shadow: 
+                inset 0px 2px 0px rgba(255, 220, 140, 0.5),
+                inset 0px -2px 0px rgba(212, 107, 21, 0.8),
+                0px 2px 5px rgba(0, 0, 0, 0.4);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="content-panel">
+        <h1>About SudoSLVRR</h1>
+        
+        <h2>The Research</h2>
+        <p>SudoSLVRR is more than just a game. It is another step for innovating faster and reliable algorithms. The system was developed under the thesis title: <strong>SudoSLVRR: A Web-based Sudoku Solver using Multithreaded Multi-Colony Ant Optimization with Ring and Random Communication Topologies</strong>.</p>
+        <p>By mimicking the biological foraging behavior of ants through artificial pheromone trails and utilizing parallel computing threads, the engine is designed to rapidly crack not just standard 9x9 puzzles, but massive, high-order 16x16 and 25x25 grids.</p>
+
+        <div class="highlight-box">
+            <h2>Can You Beat the Ants? 🐜</h2>
+            <p>Think your logic is faster than a highly optimized swarm intelligence? We challenge you to find out! Jump into <strong>Game Mode</strong> and try to solve the grid manually using your own brainpower. </p>
+            <p>If you get completely stuck, simply hit the <strong>Solve</strong> button. The engine will deploy its digital ant colonies onto the board, seamlessly communicating and laying down pheromones to find the correct configuration in seconds. Try to beat the ants before they beat the board!</p>
+        </div>
+
+        <h2>Key Features</h2>
+        <ul>
+            <li><strong>Multiple Grid Sizes:</strong> Play and solve standard 9x9 puzzles, or challenge yourself with massive 16x16 and 25x25 extended grids.</li>
+            <li><strong>Interactive Game Mode:</strong> A clean UI for manual solving, complete with real-time error checking (duplicate highlights) and undo/erase tools.</li>
+            <li><strong>Advanced Experiment Mode:</strong> Full access to the engine's parameters. Tweak the number of ants, evaporation rates, convergence thresholds, and thread communication intervals to see how the AI reacts.</li>
+            <li><strong>Custom Puzzle Creation:</strong> Build your own impossible puzzles from scratch, save them to the library, or upload them via standard <code>.txt</code> files.</li>
+            <li><strong>PDF Exporting:</strong> Generate clean, 2-page printable PDF documents containing both the initial puzzle state and the final SudoSLVRR solution.</li>
+        </ul>
+
+        <h2>Developer Details</h2>
+        <div class="developer-box">
+            <p><strong>Developed by:</strong> John Michael E. Jabuen</p>
+            <p><strong>Program:</strong> Bachelor of Science in Computer Science</p>
+            <p><strong>Institution:</strong> University of the Philippines Tacloban College</p>
+            <p><strong>Email:</strong> <a href="mailto:johnmichaeljabuen@gmail.com" class="dev-link">johnmichaeljabuen@gmail.com</a></p>
+            <p><strong>Facebook:</strong> <a href="https://web.facebook.com/johnmichael.jabuen.3" target="_blank" class="dev-link">John Michael Jabuen</a></p>
+        </div>
+
+        <p class="copyright">&copy; 2026 John Michael E. Jabuen. All rights reserved.</p>
+
+        <div class="back-btn-container">
+            <a href="{{ url_for('menu') }}" class="menu-btn">Back to Main Menu</a>
+        </div>
+    </div>
+
+</body>
+</html>
